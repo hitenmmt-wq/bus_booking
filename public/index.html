@@ -291,7 +291,7 @@
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const TOKEN_SERVER = "http://localhost:5001";
+const TOKEN_SERVER = "http://localhost:8080/get-token"
 
 // ═══════════════════════════════════════════════════════════
 // MOCK BUS DATA
@@ -683,6 +683,7 @@ function stopViz() {
   wvBars.forEach(b => { b.style.height='4px'; b.style.background='rgba(255,107,0,.3)'; });
 }
 
+// ── 2. Replace your entire startCall() with this ────────────────────
 async function startCall() {
   const btn = document.getElementById('startBtn');
   if (btn.disabled) return;
@@ -692,10 +693,25 @@ async function startCall() {
   setOrbState('connecting');
   setStatus('ટોકન મળી રહ્યો છે…');
 
+  let token, lkUrl;
+
   try {
-    const res = await fetch(`${TOKEN_SERVER}/get-token`);
-    if (!res.ok) throw new Error(`Token server error ${res.status}`);
-    const { token, url } = await res.json();
+    const res = await fetch(TOKEN_SERVER);
+    if (!res.ok) throw new Error(`Token server: ${res.status}`);
+    const data = await res.json();
+    token = data.token;
+    lkUrl = data.url;
+    console.log('✅ Fresh token received');
+  } catch (err) {
+    document.getElementById('voiceOverlay').classList.remove('active');
+    setBusy(false);
+    btn.disabled  = false;
+    btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
+    addMsg('ai', `⚠️ Token server ચાલુ નથી!\n\nટર્મિનલ માં ચલાવો:\npython token_server.py`);
+    return;
+  }
+
+  try {
     setStatus('LiveKit સાથે જોડાઈ રહ્યા છીએ…');
 
     room = new LivekitClient.Room({
@@ -707,6 +723,7 @@ async function startCall() {
       setOrbState('listening');
       setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
       setBusy(true);
+      addMsg('ai', '🙏 નમસ્તે! હું Rakesh. ક્યાં જવું છે?');
     });
 
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
@@ -716,6 +733,10 @@ async function startCall() {
       btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે ફરી વાત કરો';
       addMsg('ai', '📵 Rakesh: ધન્યવાદ! સુરક્ષિત યાત્રા 🙏');
       room = null;
+    });
+
+    room.on(LivekitClient.RoomEvent.ConnectionStateChanged, s => {
+      if (s === 'reconnecting') setStatus('🔄 ફરી જોડાઈ રહ્યા છીએ…');
     });
 
     room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
@@ -737,10 +758,8 @@ async function startCall() {
         if (seg.final) {
           addMsg(isLocal ? 'user' : 'ai', seg.text);
           setOrbState(isLocal ? 'listening' : 'speaking');
-          // Show seat chart if agent mentions seat selection
-          if (!isLocal && checkForSeatTrigger(seg.text) && !document.getElementById('seatCard')) {
+          if (!isLocal && checkSeatTrigger(seg.text) && !document.getElementById('seatCard'))
             setTimeout(() => showSeatChart(), 500);
-          }
         }
       }
     });
@@ -748,19 +767,17 @@ async function startCall() {
     room.on(LivekitClient.RoomEvent.DataReceived, (payload, participant) => {
       try {
         const msg = JSON.parse(new TextDecoder().decode(payload));
+        if (msg.type === 'show_seats' && !document.getElementById('seatCard'))
+          showSeatChart(msg.buses || BUSES);
         if (msg.type === 'transcript' && msg.text) {
           const isLocal = !!participant?.isLocal;
           setLive(isLocal ? 'user' : 'rakesh', msg.text);
           if (msg.final) addMsg(isLocal ? 'user' : 'ai', msg.text);
         }
-        // BE can also send: { type: 'show_seats', buses: [...] }
-        if (msg.type === 'show_seats') {
-          if (!document.getElementById('seatCard')) showSeatChart(msg.buses);
-        }
       } catch(_) {}
     });
 
-    await room.connect(url, token);
+    await room.connect(lkUrl, token);
     await room.localParticipant.setMicrophoneEnabled(true);
 
     const micPub = room.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone);
@@ -772,7 +789,7 @@ async function startCall() {
     setBusy(false);
     btn.disabled  = false;
     btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-    addMsg('ai', `⚠️ કૉલ ન થઈ શક્યો:\n${err.message}\n\ntoken_server.py ચાલુ છે?`);
+    addMsg('ai', `⚠️ કૉલ ન થઈ શક્યો: ${err.message}`);
     room = null;
   }
 }
