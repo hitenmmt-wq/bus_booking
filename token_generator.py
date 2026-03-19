@@ -3,6 +3,7 @@
 # It serves fresh tokens at: http://localhost:8080/get-token
 
 import json
+from datetime import timedelta
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from livekit import api  # pip install livekit
@@ -27,57 +28,65 @@ def generate_token():
         ))
         .with_identity(f"user-{int(time.time())}")
         .with_name("User")
-        .with_ttl(8 * 3600)  # 8 hours
+        .with_ttl(timedelta(hours=8))   # 8 hours
         .to_jwt()
     )
     return token
 
 
 class TokenHandler(BaseHTTPRequestHandler):
+ 
     def do_OPTIONS(self):
         self.send_response(200)
         self._cors()
         self.end_headers()
-
+ 
     def do_GET(self):
         if self.path == "/get-token":
             try:
                 token = generate_token()
-                body = json.dumps({"token": token, "url": LIVEKIT_URL}).encode()
+                body  = json.dumps({"token": token, "url": LIVEKIT_URL}).encode()
                 self.send_response(200)
                 self._cors()
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
-                print(f"✅ Token issued to {self.client_address[0]}")
-            except Exception as e:
+                print(f"✅ Token issued  room={ROOM_NAME}  identity=user-{int(time.time())}")
+            except Exception as exc:
+                err = json.dumps({"error": str(exc)}).encode()
                 self.send_response(500)
                 self._cors()
                 self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(err)))
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                self.wfile.write(err)
+                print(f"❌ Token error: {exc}")
         else:
             self.send_response(404)
             self.end_headers()
-
+ 
     def _cors(self):
-        # Allow requests from your Vercel site
-        self.send_header("Access-Control-Allow-Origin", "https://busbookingsahayak.vercel.app")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-
-    def log_message(self, format, *args):
-        pass  # suppress default logs
-
-
+ 
+    def log_message(self, *args):
+        pass   # suppress default Apache-style logs
+ 
+ 
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", PORT), TokenHandler)
-    print(f"🚀 Token server running at http://localhost:{PORT}/get-token")
-    print(f"🔑 API Key: {LIVEKIT_API_KEY}")
-    print(f"🏠 Room: {ROOM_NAME}")
-    print("─" * 50)
+    httpd = HTTPServer(("0.0.0.0", PORT), TokenHandler)
+    print("─" * 52)
+    print(f"🚀  Token server  →  http://localhost:{PORT}/get-token")
+    print(f"🔑  API Key       →  {LIVEKIT_API_KEY}")
+    print(f"🏠  Room          →  {ROOM_NAME}")
+    print(f"🌐  LiveKit URL   →  {LIVEKIT_URL}")
+    print("─" * 52)
+    print("Run your agent in a second terminal:")
+    print(f"    py agent.py connect --room {ROOM_NAME}")
+    print("─" * 52)
     try:
-        server.serve_forever()
+        httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n🛑 Token server stopped.")
+        print("\n🛑  Token server stopped.")
