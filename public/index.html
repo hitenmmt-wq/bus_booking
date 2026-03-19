@@ -692,40 +692,49 @@ async function startCall() {
   document.getElementById('voiceOverlay').classList.add('active');
   setOrbState('connecting');
   setStatus('ટોકન મળી રહ્યો છે…');
-
+ 
   let token, lkUrl;
-
+ 
+  // ── Step 1: Fetch fresh token from your Python token server ────────────
   try {
     const res = await fetch(TOKEN_SERVER);
-    if (!res.ok) throw new Error(`Token server: ${res.status}`);
+    if (!res.ok) throw new Error(`Token server: HTTP ${res.status}`);
     const data = await res.json();
+    if (data.error) throw new Error(data.error);
     token = data.token;
     lkUrl = data.url;
-    console.log('✅ Fresh token received');
+    console.log('✅ Fresh token received for room: bus-booking-room');
   } catch (err) {
     document.getElementById('voiceOverlay').classList.remove('active');
     setBusy(false);
     btn.disabled  = false;
     btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-    addMsg('ai', `⚠️ Token server ચાલુ નથી!\n\nટર્મિનલ માં ચલાવો:\npython token_server.py`);
+    addMsg('ai',
+      '⚠️ Token server ચાલુ નથી!\n\n' +
+      'ટર્મિનલ 1 માં:\n  python token_server.py\n\n' +
+      'ટર્મિનલ 2 માં:\n  py agent.py connect --room bus-booking-room\n\n' +
+      'ngrok ચાલુ છે? TOKEN_SERVER URL સાચો છે?'
+    );
     return;
   }
-
+ 
+  // ── Step 2: Connect to LiveKit room ────────────────────────────────────
   try {
     setStatus('LiveKit સાથે જોડાઈ રહ્યા છીએ…');
-
+ 
     room = new LivekitClient.Room({
-      adaptiveStream: true, dynacast: true,
+      adaptiveStream: true,
+      dynacast: true,
       audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true },
     });
-
+ 
     room.on(LivekitClient.RoomEvent.Connected, () => {
       setOrbState('listening');
       setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
       setBusy(true);
       addMsg('ai', '🙏 નમસ્તે! હું Rakesh. ક્યાં જવું છે?');
     });
-
+ 
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
       document.getElementById('voiceOverlay').classList.remove('active');
       stopViz(); setOrbState('idle'); setBusy(false);
@@ -734,22 +743,22 @@ async function startCall() {
       addMsg('ai', '📵 Rakesh: ધન્યવાદ! સુરક્ષિત યાત્રા 🙏');
       room = null;
     });
-
+ 
     room.on(LivekitClient.RoomEvent.ConnectionStateChanged, s => {
       if (s === 'reconnecting') setStatus('🔄 ફરી જોડાઈ રહ્યા છીએ…');
     });
-
+ 
     room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === LivekitClient.Track.Kind.Audio) {
         const el = track.attach(); el.autoplay = true; document.body.appendChild(el);
         setOrbState('speaking'); setStatus('🔊 Rakesh બોલી રહ્યા છે…');
       }
     });
-
+ 
     room.on(LivekitClient.RoomEvent.TrackUnsubscribed, track => {
       track.detach(); setOrbState('listening'); setStatus('👂 સાંભળી રહ્યા છીએ…');
     });
-
+ 
     room.on(LivekitClient.RoomEvent.TranscriptionReceived, (segments, participant) => {
       for (const seg of segments) {
         if (!seg.text) continue;
@@ -763,7 +772,7 @@ async function startCall() {
         }
       }
     });
-
+ 
     room.on(LivekitClient.RoomEvent.DataReceived, (payload, participant) => {
       try {
         const msg = JSON.parse(new TextDecoder().decode(payload));
@@ -776,13 +785,16 @@ async function startCall() {
         }
       } catch(_) {}
     });
-
+ 
+    // ── Connect using WSS URL + fresh token ──────────────────────────────
     await room.connect(lkUrl, token);
     await room.localParticipant.setMicrophoneEnabled(true);
-
-    const micPub = room.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone);
+ 
+    const micPub = room.localParticipant.getTrackPublication(
+      LivekitClient.Track.Source.Microphone
+    );
     if (micPub?.track?.mediaStream) startViz(micPub.track.mediaStream);
-
+ 
   } catch (err) {
     console.error('startCall:', err);
     document.getElementById('voiceOverlay').classList.remove('active');
