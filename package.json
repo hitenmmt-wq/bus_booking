@@ -1,6 +1,6 @@
 {
-  "name": "bus-booking-sahayak",
+  "name": "gujarat-bus-booking",
   "version": "1.0.0",
-  "private": true,
-  "type": "module"
+  "type": "module",
+  "engines": { "node": ">=18" }
 }
