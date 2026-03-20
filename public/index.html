@@ -812,7 +812,7 @@
       document.getElementById('voiceOverlay').classList.remove('active');
       setBusy(false); btn.disabled=false;
       btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-      addMsg('ai',`⚠️ Token server ચાલુ નથી!\n\n1. python token_server.py\n2. py agent.py connect --room bus-booking-room\n3. ngrok http 8080`);
+      addMsg('ai',`⚠️ Token server ચાલુ નથી!`);
       return;
     }
 
@@ -822,19 +822,19 @@
 
       room.on(LivekitClient.RoomEvent.Connected,()=>{
         setOrbState('listening');setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
-        setBusy(true);addMsg('ai','🙏 નમસ્તે! હું Rakesh.');
+        setBusy(true);
       });
       room.on(LivekitClient.RoomEvent.Disconnected,()=>{
         document.getElementById('voiceOverlay').classList.remove('active');
         stopViz();setOrbState('idle');setBusy(false);
         btn.disabled=false;btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે ફરી વાત કરો';
-        addMsg('ai','📵 ધન્યવાદ! સુરક્ષિત યાત્રા 🙏');room=null;
+        addMsg('ai','📵 ધન્યવાદ! મા અંબા તમને આશીર્વાદ આપે🙏');room=null;
       });
       room.on(LivekitClient.RoomEvent.ConnectionStateChanged,s=>{if(s==='reconnecting')setStatus('🔄 ફરી જોડાઈ રહ્યા છીએ…');});
       room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{
         if(track.kind===LivekitClient.Track.Kind.Audio){
           const el=track.attach();el.autoplay=true;document.body.appendChild(el);
-          setOrbState('speaking');setStatus('🔊 Rakesh બોલી રહ્યા છે…');
+          setOrbState('speaking');setStatus('🔊 Rakesh બોલી રહ્યો છુ…');
         }
       });
       room.on(LivekitClient.RoomEvent.TrackUnsubscribed,track=>{track.detach();setOrbState('listening');setStatus('👂 સાંભળી રહ્યા છીએ…');});
@@ -871,7 +871,7 @@
       document.getElementById('voiceOverlay').classList.remove('active');
       setBusy(false);btn.disabled=false;
       btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-      addMsg('ai',`⚠️ કૉલ ન થઈ શક્યો: ${err.message}`);room=null;
+      addMsg('ai',`⚠️ કૉલ ના થઈ શક્યો: ${err.message}`);room=null;
     }
   }
 
