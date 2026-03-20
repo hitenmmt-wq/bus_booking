@@ -292,389 +292,225 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════
 const TOKEN_SERVER = "http://localhost:8080/get-token"
+const LK_URL       = "wss://busbooking-p52t2etx.livekit.cloud";
+const LK_ROOM      = "bus-booking-room";
 
-// ═══════════════════════════════════════════════════════════
-// MOCK BUS DATA
-// Replace this with: const BUSES = await fetch('/api/buses').then(r=>r.json())
-// Your BE should return the same JSON shape
-// ═══════════════════════════════════════════════════════════
-const BUSES = [
-  {
-    id: "BUS001",
-    name: "Gujarat Express AC",
-    route: "અમદાવાદ → સુરત",
-    departure: "21:00",
-    layout: {
-      decks: [
-        {
-          label: "નીચેનો ડેક",
-          rows: [
-            { rowNo:1, left:[{name:"L1",status:"available",type:"window",price:450},{name:"L2",status:"booked",type:"aisle",price:400}], right:[{name:"L3",status:"available",type:"aisle",price:400},{name:"L4",status:"ladies",type:"window",price:450}] },
-            { rowNo:2, left:[{name:"L5",status:"available",type:"window",price:450},{name:"L6",status:"available",type:"aisle",price:400}], right:[{name:"L7",status:"booked",type:"aisle",price:400},{name:"L8",status:"available",type:"window",price:450}] },
-            { rowNo:3, left:[{name:"L9",status:"booked",type:"window",price:450},{name:"L10",status:"available",type:"aisle",price:400}], right:[{name:"L11",status:"available",type:"aisle",price:400},{name:"L12",status:"ladies",type:"window",price:450}] },
-            { rowNo:4, left:[{name:"L13",status:"available",type:"window",price:450},{name:"L14",status:"available",type:"aisle",price:400}], right:[{name:"L15",status:"ladies",type:"aisle",price:400},{name:"L16",status:"available",type:"window",price:450}] },
-            { rowNo:5, left:[{name:"L17",status:"available",type:"window",price:450},{name:"L18",status:"booked",type:"aisle",price:400}], right:[{name:"L19",status:"available",type:"aisle",price:400},{name:"L20",status:"available",type:"window",price:450}] },
-          ]
-        },
-        {
-          label: "ઉપરનો ડેક",
-          rows: [
-            { rowNo:1, left:[{name:"U1",status:"available",type:"window",price:500},{name:"U2",status:"booked",type:"aisle",price:450}], right:[{name:"U3",status:"ladies",type:"aisle",price:450},{name:"U4",status:"available",type:"window",price:500}] },
-            { rowNo:2, left:[{name:"U5",status:"booked",type:"window",price:500},{name:"U6",status:"available",type:"aisle",price:450}], right:[{name:"U7",status:"available",type:"aisle",price:450},{name:"U8",status:"booked",type:"window",price:500}] },
-            { rowNo:3, left:[{name:"U9",status:"available",type:"window",price:500},{name:"U10",status:"available",type:"aisle",price:450}], right:[{name:"U11",status:"booked",type:"aisle",price:450},{name:"U12",status:"available",type:"window",price:500}] },
-            { rowNo:4, left:[{name:"U13",status:"ladies",type:"window",price:500},{name:"U14",status:"available",type:"aisle",price:450}], right:[{name:"U15",status:"available",type:"aisle",price:450},{name:"U16",status:"booked",type:"window",price:500}] },
-            { rowNo:5, left:[{name:"U17",status:"available",type:"window",price:500},{name:"U18",status:"booked",type:"aisle",price:450}], right:[{name:"U19",status:"available",type:"aisle",price:450},{name:"U20",status:"available",type:"window",price:500}] },
-          ]
-        }
-      ]
-    }
-  },
-  {
-    id: "BUS002",
-    name: "Saurashtra Travels",
-    route: "અમદાવાદ → રાજકોટ",
-    departure: "22:30",
-    layout: {
-      decks: [
-        {
-          label: "મુખ્ય ડેક",
-          rows: [
-            { rowNo:1, left:[{name:"A1",status:"available",type:"window",price:280},{name:"A2",status:"booked",type:"aisle",price:260}], right:[{name:"A3",status:"available",type:"aisle",price:260},{name:"A4",status:"available",type:"window",price:280}] },
-            { rowNo:2, left:[{name:"B1",status:"ladies",type:"window",price:280},{name:"B2",status:"ladies",type:"aisle",price:260}], right:[{name:"B3",status:"booked",type:"aisle",price:260},{name:"B4",status:"available",type:"window",price:280}] },
-            { rowNo:3, left:[{name:"C1",status:"available",type:"window",price:280},{name:"C2",status:"available",type:"aisle",price:260}], right:[{name:"C3",status:"available",type:"aisle",price:260},{name:"C4",status:"booked",type:"window",price:280}] },
-            { rowNo:4, left:[{name:"D1",status:"booked",type:"window",price:280},{name:"D2",status:"available",type:"aisle",price:260}], right:[{name:"D3",status:"ladies",type:"aisle",price:260},{name:"D4",status:"available",type:"window",price:280}] },
-            { rowNo:5, left:[{name:"E1",status:"available",type:"window",price:280},{name:"E2",status:"booked",type:"aisle",price:260}], right:[{name:"E3",status:"available",type:"aisle",price:260},{name:"E4",status:"available",type:"window",price:280}] },
-          ]
-        }
-      ]
-    }
-  },
-  {
-    id: "BUS003",
-    name: "Mumbai Volvo Sleeper",
-    route: "અમદાવાદ → મુંબઈ",
-    departure: "20:00",
-    layout: {
-      decks: [
-        {
-          label: "નીચેનો ડેક",
-          rows: [
-            { rowNo:1, left:[{name:"S1",status:"available",type:"window",price:650},{name:"S2",status:"ladies",type:"aisle",price:600}], right:[{name:"S3",status:"booked",type:"aisle",price:600},{name:"S4",status:"available",type:"window",price:650}] },
-            { rowNo:2, left:[{name:"S5",status:"booked",type:"window",price:650},{name:"S6",status:"available",type:"aisle",price:600}], right:[{name:"S7",status:"available",type:"aisle",price:600},{name:"S8",status:"booked",type:"window",price:650}] },
-            { rowNo:3, left:[{name:"S9",status:"available",type:"window",price:650},{name:"S10",status:"available",type:"aisle",price:600}], right:[{name:"S11",status:"ladies",type:"aisle",price:600},{name:"S12",status:"available",type:"window",price:650}] },
-            { rowNo:4, left:[{name:"S13",status:"booked",type:"window",price:650},{name:"S14",status:"available",type:"aisle",price:600}], right:[{name:"S15",status:"available",type:"aisle",price:600},{name:"S16",status:"booked",type:"window",price:650}] },
-          ]
-        },
-        {
-          label: "ઉપરનો ડેક",
-          rows: [
-            { rowNo:1, left:[{name:"T1",status:"available",type:"window",price:700},{name:"T2",status:"booked",type:"aisle",price:650}], right:[{name:"T3",status:"available",type:"aisle",price:650},{name:"T4",status:"ladies",type:"window",price:700}] },
-            { rowNo:2, left:[{name:"T5",status:"available",type:"window",price:700},{name:"T6",status:"available",type:"aisle",price:650}], right:[{name:"T7",status:"booked",type:"aisle",price:650},{name:"T8",status:"available",type:"window",price:700}] },
-            { rowNo:3, left:[{name:"T9",status:"ladies",type:"window",price:700},{name:"T10",status:"booked",type:"aisle",price:650}], right:[{name:"T11",status:"available",type:"aisle",price:650},{name:"T12",status:"available",type:"window",price:700}] },
-            { rowNo:4, left:[{name:"T13",status:"available",type:"window",price:700},{name:"T14",status:"available",type:"aisle",price:650}], right:[{name:"T15",status:"booked",type:"aisle",price:650},{name:"T16",status:"available",type:"window",price:700}] },
-          ]
-        }
-      ]
-    }
-  }
-];
-
-// ═══════════════════════════════════════════════════════════
-// STARS
-// ═══════════════════════════════════════════════════════════
-for (let i = 0; i < 60; i++) {
-  const s = document.createElement('div');
-  s.className = 'star';
-  s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*70}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+// ── Stars ─────────────────────────────────────────────────────────────────
+for(let i=0;i<60;i++){
+  const s=document.createElement('div');s.className='star';
+  s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*70}%;--d:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
   document.getElementById('stars').appendChild(s);
 }
-
-// ═══════════════════════════════════════════════════════════
-// WAVEFORM BARS
-// ═══════════════════════════════════════════════════════════
-const wf = document.getElementById('waveform');
-for (let i = 0; i < 16; i++) {
-  const b = document.createElement('div'); b.className = 'wv-bar'; wf.appendChild(b);
-}
-const wvBars = wf.querySelectorAll('.wv-bar');
-
-// ═══════════════════════════════════════════════════════════
-// SEAT CHART STATE
-// ═══════════════════════════════════════════════════════════
-let selectedSeats = {};   // { seatName: seatObj }
-let activeBusId   = null;
-
-// ── Render seat chart into chat ─────────────────────────────
-function showSeatChart() {
+ 
+// ── Waveform ──────────────────────────────────────────────────────────────
+const wf=document.getElementById('waveform');
+for(let i=0;i<16;i++){const b=document.createElement('div');b.className='wv-bar';wf.appendChild(b);}
+const wvBars=wf.querySelectorAll('.wv-bar');
+ 
+// ── Seat chart state ──────────────────────────────────────────────────────
+let selectedSeats = {}, activeBusId = null, busData = [];
+ 
+// Called by agent transcript trigger OR manually
+// params: { from, to, date } — if provided, fetches from BE
+async function showSeatChart(params) {
+  if (document.getElementById('seatCard')) return;
+ 
+  let buses = busData; // use cached if already fetched
+ 
+  // Fetch from BE if params provided
+  if (params && params.from && params.to && params.date) {
+    try {
+      const url = `${TOKEN_SERVER}/buses?from=${encodeURIComponent(params.from)}&to=${encodeURIComponent(params.to)}&date=${encodeURIComponent(params.date)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.buses && data.buses.length > 0) {
+        buses = data.buses;
+        busData = buses; // cache it
+      } else {
+        addMsg('ai', `⚠️ ${params.from} → ${params.to} માટે ${params.date} ના રોજ કોઈ બસ નથી.`);
+        return;
+      }
+    } catch (e) {
+      console.error('Bus fetch error:', e);
+      addMsg('ai', '⚠️ બસ ડેટા મળ્યો નહીં. token_server.py ચાલુ છે?');
+      return;
+    }
+  }
+ 
+  if (!buses || buses.length === 0) return;
+ 
   selectedSeats = {};
-  activeBusId   = BUSES[0].id;
-
+  activeBusId   = buses[0].id;
+ 
   const wrap = document.getElementById('chatContainer');
   const card = document.createElement('div');
-  card.className = 'seat-card';
-  card.id = 'seatCard';
-
+  card.className = 'seat-card'; card.id = 'seatCard';
   card.innerHTML = `
     <div class="seat-card-header">
-      <div class="bus-icon">🚌</div>
-      <div class="bus-info">
-        <h4>સીટ પસંદ કરો</h4>
-        <p>બસ અને સીટ પસંદ કરો — ₹ ભાવ દેખાશે</p>
-      </div>
+      <div class="s-bus-icon">🚌</div>
+      <div class="s-bus-info"><h4>સીટ પસંદ કરો</h4><p>બસ અને સીટ પસંદ કરો — ₹ ભાવ દેખાશે</p></div>
     </div>
-
     <div class="bus-tabs" id="busTabs"></div>
-
     <div class="seat-legend">
       <div class="legend-item"><div class="legend-dot" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.5)"></div>ઉપલબ્ધ</div>
       <div class="legend-item"><div class="legend-dot" style="background:rgba(236,72,153,.15);border-color:rgba(236,72,153,.4)"></div>મહિલા</div>
       <div class="legend-item"><div class="legend-dot" style="background:rgba(255,107,0,.2);border-color:var(--saffron)"></div>પસંદ</div>
       <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);opacity:.5"></div>ભરેલ</div>
     </div>
-
     <div id="deckArea"></div>
-
     <div class="seat-summary">
       <div class="seat-stats">
         <div class="seat-stat">ઉપલબ્ધ: <strong id="avCount">—</strong></div>
         <div class="seat-stat">પસંદ: <strong id="selCount">0</strong></div>
         <div class="seat-stat">કુલ: <strong id="fareTotal">₹0</strong></div>
       </div>
-      <button class="confirm-seats-btn" id="confirmSeatsBtn" disabled onclick="confirmSeats()">
-        ✅ સીટ બુક કરો
-      </button>
-    </div>
-  `;
-
+      <button class="confirm-seats-btn" id="confirmSeatsBtn" disabled onclick="confirmSeats()">✅ સીટ બુક કરો</button>
+    </div>`;
   wrap.appendChild(card);
-  wrap.scrollTop = wrap.scrollHeight;
-
-  // Build bus tabs
+ 
   const tabsEl = card.querySelector('#busTabs');
-  BUSES.forEach(bus => {
+  buses.forEach(bus => {
     const t = document.createElement('div');
     t.className = 'bus-tab' + (bus.id === activeBusId ? ' active' : '');
-    t.textContent = `${bus.name} · ${bus.departure}`;
+    // Show operator + departure + bus_type + price
+    t.textContent = `${bus.name} · ${bus.departure} · ₹${bus.price}`;
     t.onclick = () => switchBus(bus.id);
     tabsEl.appendChild(t);
   });
-
+ 
   renderDeck();
+  wrap.scrollTop = wrap.scrollHeight;
 }
-
+ 
 function switchBus(id) {
-  activeBusId = id;
-  selectedSeats = {};
-  document.querySelectorAll('.bus-tab').forEach((t, i) => {
-    t.classList.toggle('active', BUSES[i].id === id);
-  });
+  activeBusId = id; selectedSeats = {};
+  document.querySelectorAll('.bus-tab').forEach((t, i) => t.classList.toggle('active', busData[i].id === id));
   renderDeck();
-  updateSeatSummary();
 }
-
+ 
 function renderDeck() {
-  const bus     = BUSES.find(b => b.id === activeBusId);
-  const deckArea = document.getElementById('deckArea');
-  if (!deckArea || !bus) return;
-  deckArea.innerHTML = '';
-
+  const bus  = busData.find(b => b.id === activeBusId);
+  const area = document.getElementById('deckArea');
+  if (!area || !bus) return;
+  area.innerHTML = '';
+ 
   bus.layout.decks.forEach(deck => {
-    const dl = document.createElement('div');
-    dl.className = 'deck-label';
-    dl.textContent = deck.label;
-    deckArea.appendChild(dl);
-
-    const rowsWrap = document.createElement('div');
-    rowsWrap.className = 'seat-rows';
-
+    const dl = document.createElement('div'); dl.className = 'deck-label'; dl.textContent = deck.label; area.appendChild(dl);
+    const rw = document.createElement('div'); rw.className = 'seat-rows';
     deck.rows.forEach(row => {
-      const rowEl = document.createElement('div');
-      rowEl.className = 'seat-row';
-
-      const rn = document.createElement('div');
-      rn.className = 'row-num';
-      rn.textContent = row.rowNo;
-      rowEl.appendChild(rn);
-
-      row.left.forEach(seat  => rowEl.appendChild(makeSeatEl(seat)));
-      const aisle = document.createElement('div'); aisle.className = 'aisle';
-      rowEl.appendChild(aisle);
-      row.right.forEach(seat => rowEl.appendChild(makeSeatEl(seat)));
-
-      rowsWrap.appendChild(rowEl);
+      const rowEl = document.createElement('div'); rowEl.className = 'seat-row';
+      const rn    = document.createElement('div'); rn.className = 'row-num'; rn.textContent = row.rowNo; rowEl.appendChild(rn);
+      row.left.forEach(s  => rowEl.appendChild(makeSeatEl(s)));
+      const ai = document.createElement('div'); ai.className = 'aisle'; rowEl.appendChild(ai);
+      row.right.forEach(s => rowEl.appendChild(makeSeatEl(s)));
+      rw.appendChild(rowEl);
     });
-    deckArea.appendChild(rowsWrap);
+    area.appendChild(rw);
   });
-
   updateSeatSummary();
 }
-
+ 
 function makeSeatEl(seat) {
   const el = document.createElement('div');
-  const st = selectedSeats[seat.name] ? 'selected' : seat.status;
-  el.className = `seat ${st}`;
-  el.title = seat.status !== 'booked'
-    ? `${seat.name} · ${seat.type === 'window' ? 'વિન્ડો' : 'આઇલ'} · ₹${seat.price}`
-    : `${seat.name} · ભરેલ`;
-  el.innerHTML = `<span>${seat.name}</span><span class="seat-type-icon">${seat.type === 'window' ? '⊡' : '≡'}</span>`;
-  if (seat.status !== 'booked') {
-    el.onclick = () => toggleSeat(seat, el);
-  }
+  el.className = `seat ${selectedSeats[seat.name] ? 'selected' : seat.status}`;
+  el.title     = seat.status !== 'booked' ? `${seat.name} · ₹${seat.price}` : `${seat.name} · ભરેલ`;
+  el.innerHTML = `<span>${seat.name}</span><span class="seat-type-icon">${seat.type === 'window' || seat.type === 'lower' ? '⊡' : '≡'}</span>`;
+  if (seat.status !== 'booked') el.onclick = () => toggleSeat(seat, el);
   return el;
 }
-
+ 
 function toggleSeat(seat, el) {
-  if (selectedSeats[seat.name]) {
-    delete selectedSeats[seat.name];
-    el.className = `seat ${seat.status}`;
-  } else {
-    selectedSeats[seat.name] = seat;
-    el.className = 'seat selected';
-  }
+  if (selectedSeats[seat.name]) { delete selectedSeats[seat.name]; el.className = `seat ${seat.status}`; }
+  else { selectedSeats[seat.name] = seat; el.className = 'seat selected'; }
   updateSeatSummary();
 }
-
+ 
 function updateSeatSummary() {
-  const bus  = BUSES.find(b => b.id === activeBusId);
-  if (!bus) return;
+  const bus  = busData.find(b => b.id === activeBusId); if (!bus) return;
   let avail  = 0;
-  bus.layout.decks.forEach(d => d.rows.forEach(r => {
-    [...r.left, ...r.right].forEach(s => { if (s.status !== 'booked') avail++; });
-  }));
+  bus.layout.decks.forEach(d => d.rows.forEach(r => [...r.left, ...r.right].forEach(s => { if (s.status !== 'booked') avail++; })));
   const keys = Object.keys(selectedSeats);
   const fare = keys.reduce((sum, k) => sum + selectedSeats[k].price, 0);
-  const avEl = document.getElementById('avCount');
-  const slEl = document.getElementById('selCount');
-  const frEl = document.getElementById('fareTotal');
-  const btn  = document.getElementById('confirmSeatsBtn');
-  if (avEl) avEl.textContent = avail;
-  if (slEl) slEl.textContent = keys.length;
-  if (frEl) frEl.textContent = `₹${fare.toLocaleString()}`;
-  if (btn)  btn.disabled = keys.length === 0;
+  const av   = document.getElementById('avCount');   if (av)  av.textContent  = avail;
+  const sl   = document.getElementById('selCount');  if (sl)  sl.textContent  = keys.length;
+  const fr   = document.getElementById('fareTotal'); if (fr)  fr.textContent  = `₹${fare.toLocaleString()}`;
+  const btn  = document.getElementById('confirmSeatsBtn'); if (btn) btn.disabled = keys.length === 0;
 }
-
+ 
 function confirmSeats() {
-  const bus  = BUSES.find(b => b.id === activeBusId);
+  const bus  = busData.find(b => b.id === activeBusId);
   const keys = Object.keys(selectedSeats);
   const fare = keys.reduce((sum, k) => sum + selectedSeats[k].price, 0);
   if (!keys.length || !bus) return;
-
-  // Remove seat card from chat
-  const card = document.getElementById('seatCard');
-  if (card) card.remove();
-
-  // Show user message
+  const card = document.getElementById('seatCard'); if (card) card.remove();
   addMsg('user', `✅ સીટ પસંદ: ${keys.join(', ')} — ${bus.name} — કુલ ₹${fare.toLocaleString()}`);
-
-  // Confirm via AI
-  callAI(`મેં ${bus.name} (${bus.route}) માં ${keys.join(', ')} સીટ પસંદ કરી છે. કુલ ₹${fare}. હવે બુકિંગ confirm કરો.`);
-}
-
-// ═══════════════════════════════════════════════════════════
-// AI CHAT
-// ═══════════════════════════════════════════════════════════
-const conversationHistory = [];
-
-function addMsg(who, text) {
-  const welcome = document.getElementById('welcomeCard');
-  if (welcome) welcome.remove();
-  const wrap = document.getElementById('chatContainer');
-  const div  = document.createElement('div');
-  div.className = `message ${who === 'user' ? 'user' : 'ai'}`;
-  const av = document.createElement('div');
-  av.className = `avatar ${who === 'user' ? 'user-avatar' : 'ai-avatar'}`;
-  av.textContent = who === 'user' ? '👤' : '🤖';
-  const bub = document.createElement('div');
-  bub.className = 'bubble';
-  bub.innerHTML = text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  div.append(av, bub);
-  wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
-}
-
-function showTyping() {
-  const wrap = document.getElementById('chatContainer');
-  const div  = document.createElement('div');
-  div.className = 'typing-indicator'; div.id = 'typingIndicator';
-  div.innerHTML = `<div class="avatar ai-avatar">🤖</div><div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
-}
-function removeTyping() { const el = document.getElementById('typingIndicator'); if (el) el.remove(); }
-
-// Keyword check — show seat chart when AI asks user to pick a seat
-function checkForSeatTrigger(text) {
-  const triggers = ['સીટ પસંદ', 'seat', 'સીટ', 'બેઠક', 'નકશો', 'chart'];
-  return triggers.some(t => text.toLowerCase().includes(t.toLowerCase()));
-}
-
-async function callAI(userText) {
-  conversationHistory.push({ role: 'user', content: userText });
-  showTyping();
-
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: conversationHistory })
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    removeTyping();
-    const replyText = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
-    conversationHistory.push({ role: 'assistant', content: replyText });
-    addMsg('ai', replyText);
-
-    // Auto-show seat chart if AI response is about seat selection
-    if (checkForSeatTrigger(replyText) && !document.getElementById('seatCard')) {
-      setTimeout(() => showSeatChart(), 400);
-    }
-  } catch (err) {
-    removeTyping();
-    addMsg('ai', '⚠️ માફ કરશો, સમસ્યા આવી. ફરી પ્રયાસ કરો.');
-    console.error(err);
+  // Send selection to LiveKit agent via data channel
+  if (room) {
+    const payload = JSON.stringify({ type: 'seats_selected', bus: bus.name, route: bus.route, seats: keys, fare });
+    room.localParticipant.publishData(new TextEncoder().encode(payload), { reliable: true });
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-// VOICE CALL
-// ═══════════════════════════════════════════════════════════
-let room = null, audioCtx = null, analyser = null, animFrame = null;
-
-function setStatus(txt) { document.getElementById('voiceStatus').textContent = txt; }
+ 
+// ── Chat helpers ──────────────────────────────────────────────────────────
+function addMsg(who, text) {
+  const welcome = document.getElementById('welcomeCard'); if (welcome) welcome.remove();
+  const wrap    = document.getElementById('chatContainer');
+  const div     = document.createElement('div'); div.className = `message ${who === 'user' ? 'user' : 'ai'}`;
+  const av      = document.createElement('div'); av.className = `avatar ${who === 'user' ? 'user-avatar' : 'ai-avatar'}`; av.textContent = who === 'user' ? '👤' : '🤖';
+  const bub     = document.createElement('div'); bub.className = 'bubble';
+  bub.innerHTML = text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  div.append(av, bub); wrap.appendChild(div); wrap.scrollTop = wrap.scrollHeight;
+}
+ 
+// ── Extract city/date from agent transcript for seat chart trigger ─────────
+function parseAgentContext(text) {
+  // Agent text contains Gujarati city names — map back to English for API call
+  const GU_TO_EN = {
+    'અમદાવાદ':'Ahmedabad','સુરત':'Surat','વડોદરા':'Vadodara',
+    'રાજકોટ':'Rajkot','મુંબઈ':'Mumbai','પુણે':'Pune',
+    'દિલ્હી':'Delhi','બેંગ્લોર':'Bangalore',
+  };
+  let from = null, to = null, date = null;
+  for (const [gu, en] of Object.entries(GU_TO_EN)) {
+    if (text.includes(gu)) { if (!from) from = en; else if (!to) to = en; }
+  }
+  // Look for date pattern YYYY-MM-DD in text (agent sometimes says it)
+  const dm = text.match(/\d{4}-\d{2}-\d{2}/);
+  if (dm) date = dm[0];
+  return { from, to, date };
+}
+ 
+function checkSeatTrigger(text) {
+  return ['સીટ', 'seat', 'seating', 'બેઠક', 'chart'].some(t => text.toLowerCase().includes(t));
+}
+ 
+// ── Voice state ───────────────────────────────────────────────────────────
+let room = null, audioCtx = null, animFrame = null;
+ 
+function setStatus(t)  { document.getElementById('voiceStatus').textContent = t; }
 function setLive(who, txt) {
-  const label = who === 'user' ? '👤 તમે' : '🤖 Rakesh';
-  document.getElementById('liveT').innerHTML = `<strong>${label}:</strong> ${txt}`;
+  document.getElementById('liveT').innerHTML = `<strong>${who === 'user' ? '👤 તમે' : '🤖 Rakesh'}:</strong> ${txt}`;
 }
 function setOrbState(state) {
-  const orb = document.getElementById('voiceOrb');
+  const orb   = document.getElementById('voiceOrb');
   const rings = ['ring1','ring2','ring3'].map(id => document.getElementById(id));
-  const emojis = { idle:'🎙️', connecting:'⏳', listening:'👂', speaking:'🗣️' };
-  orb.textContent = emojis[state] || '🎙️';
+  orb.textContent = {idle:'🎙️',connecting:'⏳',listening:'👂',speaking:'🗣️'}[state] || '🎙️';
   orb.className   = state === 'listening' ? 'voice-orb listening' : 'voice-orb';
   const active    = state === 'listening' || state === 'speaking';
   rings.forEach(r => r.className = active ? 'orb-ring active' : 'orb-ring');
 }
 function setBusy(busy) {
   document.getElementById('headerBadge').className = busy ? 'header-badge busy' : 'header-badge';
-  document.getElementById('statusDot').style.background = busy ? 'var(--danger)' : 'var(--success)';
   document.getElementById('badgeText').textContent = busy ? 'On Call 🔴' : 'ઓનલાઇન';
 }
-
 function startViz(stream) {
-  audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const src = audioCtx.createMediaStreamSource(stream);
-  analyser  = audioCtx.createAnalyser(); analyser.fftSize = 64;
-  src.connect(analyser);
-  const data = new Uint8Array(analyser.frequencyBinCount);
+  const an  = audioCtx.createAnalyser(); an.fftSize = 64; src.connect(an);
+  const data = new Uint8Array(an.frequencyBinCount);
   (function draw() {
-    animFrame = requestAnimationFrame(draw);
-    analyser.getByteFrequencyData(data);
-    wvBars.forEach((bar, i) => {
-      const p = (data[i] || 0) / 255;
-      bar.style.height     = Math.max(4, p * 38) + 'px';
-      bar.style.background = `rgba(255,107,0,${.25 + p * .75})`;
-    });
+    animFrame = requestAnimationFrame(draw); an.getByteFrequencyData(data);
+    wvBars.forEach((bar, i) => { const p = (data[i]||0)/255; bar.style.height = Math.max(4,p*38)+'px'; bar.style.background = `rgba(255,107,0,${.25+p*.75})`; });
   })();
 }
 function stopViz() {
@@ -682,66 +518,48 @@ function stopViz() {
   if (audioCtx)  { audioCtx.close(); audioCtx = null; }
   wvBars.forEach(b => { b.style.height='4px'; b.style.background='rgba(255,107,0,.3)'; });
 }
-
-// ── 2. Replace your entire startCall() with this ────────────────────
+ 
+// ── startCall ─────────────────────────────────────────────────────────────
 async function startCall() {
   const btn = document.getElementById('startBtn');
   if (btn.disabled) return;
-  btn.disabled = true;
-  btn.innerHTML = '<span>⏳</span> જોડાઈ રહ્યા છીએ…';
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> જોડાઈ રહ્યા છીએ…';
   document.getElementById('voiceOverlay').classList.add('active');
-  setOrbState('connecting');
-  setStatus('ટોકન મળી રહ્યો છે…');
+  setOrbState('connecting'); setStatus('ટોકન મળી રહ્યો છે…');
  
   let token, lkUrl;
- 
-  // ── Step 1: Fetch fresh token from your Python token server ────────────
   try {
-    const res = await fetch(TOKEN_SERVER);
+    const res  = await fetch(`${TOKEN_SERVER}/get-token`);
     if (!res.ok) throw new Error(`Token server: HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    token = data.token;
-    lkUrl = data.url;
-    console.log('✅ Fresh token received for room: bus-booking-room');
+    token = data.token; lkUrl = data.url;
+    console.log('✅ Token received');
   } catch (err) {
     document.getElementById('voiceOverlay').classList.remove('active');
-    setBusy(false);
-    btn.disabled  = false;
+    setBusy(false); btn.disabled = false;
     btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-    addMsg('ai',
-      '⚠️ Token server ચાલુ નથી!\n\n' +
-      'ટર્મિનલ 1 માં:\n  python token_server.py\n\n' +
-      'ટર્મિનલ 2 માં:\n  py agent.py connect --room bus-booking-room\n\n' +
-      'ngrok ચાલુ છે? TOKEN_SERVER URL સાચો છે?'
-    );
+    addMsg('ai', `⚠️ Token server ચાલુ નથી!\n\nTerminal 1: python token_server.py\nTerminal 2: py agent.py connect --room bus-booking-room\nngrok: ngrok http 8080`);
     return;
   }
  
-  // ── Step 2: Connect to LiveKit room ────────────────────────────────────
   try {
     setStatus('LiveKit સાથે જોડાઈ રહ્યા છીએ…');
- 
     room = new LivekitClient.Room({
-      adaptiveStream: true,
-      dynacast: true,
+      adaptiveStream: true, dynacast: true,
       audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true },
     });
  
     room.on(LivekitClient.RoomEvent.Connected, () => {
-      setOrbState('listening');
-      setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
-      setBusy(true);
-      addMsg('ai', '🙏 નમસ્તે! હું Rakesh. ક્યાં જવું છે?');
+      setOrbState('listening'); setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
+      setBusy(true); addMsg('ai', '🙏 નમસ્તે! હું Rakesh. ક્યાં જવું છે?');
     });
  
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
       document.getElementById('voiceOverlay').classList.remove('active');
       stopViz(); setOrbState('idle'); setBusy(false);
-      btn.disabled  = false;
-      btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે ફરી વાત કરો';
-      addMsg('ai', '📵 Rakesh: ધન્યવાદ! સુરક્ષિત યાત્રા 🙏');
-      room = null;
+      btn.disabled = false; btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે ફરી વાત કરો';
+      addMsg('ai', '📵 Rakesh: ધન્યવાદ! સુરક્ષિત યાત્રા 🙏'); room = null;
     });
  
     room.on(LivekitClient.RoomEvent.ConnectionStateChanged, s => {
@@ -754,7 +572,6 @@ async function startCall() {
         setOrbState('speaking'); setStatus('🔊 Rakesh બોલી રહ્યા છે…');
       }
     });
- 
     room.on(LivekitClient.RoomEvent.TrackUnsubscribed, track => {
       track.detach(); setOrbState('listening'); setStatus('👂 સાંભળી રહ્યા છીએ…');
     });
@@ -767,56 +584,52 @@ async function startCall() {
         if (seg.final) {
           addMsg(isLocal ? 'user' : 'ai', seg.text);
           setOrbState(isLocal ? 'listening' : 'speaking');
-          if (!isLocal && checkSeatTrigger(seg.text) && !document.getElementById('seatCard'))
-            setTimeout(() => showSeatChart(), 500);
+          // When agent confirms seat selection stage — show real seat chart
+          if (!isLocal && checkSeatTrigger(seg.text) && !document.getElementById('seatCard')) {
+            const ctx = parseAgentContext(seg.text);
+            setTimeout(() => showSeatChart(ctx.from && ctx.to && ctx.date ? ctx : null), 500);
+          }
         }
       }
     });
  
-    room.on(LivekitClient.RoomEvent.DataReceived, (payload, participant) => {
+    // Agent can send: { type:'show_seats', from:'Ahmedabad', to:'Surat', date:'2026-03-25' }
+    room.on(LivekitClient.RoomEvent.DataReceived, (payload) => {
       try {
         const msg = JSON.parse(new TextDecoder().decode(payload));
-        if (msg.type === 'show_seats' && !document.getElementById('seatCard'))
-          showSeatChart(msg.buses || BUSES);
+        if (msg.type === 'show_seats' && !document.getElementById('seatCard')) {
+          showSeatChart({ from: msg.from, to: msg.to, date: msg.date });
+        }
         if (msg.type === 'transcript' && msg.text) {
-          const isLocal = !!participant?.isLocal;
-          setLive(isLocal ? 'user' : 'rakesh', msg.text);
-          if (msg.final) addMsg(isLocal ? 'user' : 'ai', msg.text);
+          setLive('rakesh', msg.text);
+          if (msg.final) addMsg('ai', msg.text);
         }
       } catch(_) {}
     });
  
-    // ── Connect using WSS URL + fresh token ──────────────────────────────
     await room.connect(lkUrl, token);
     await room.localParticipant.setMicrophoneEnabled(true);
- 
-    const micPub = room.localParticipant.getTrackPublication(
-      LivekitClient.Track.Source.Microphone
-    );
+    const micPub = room.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone);
     if (micPub?.track?.mediaStream) startViz(micPub.track.mediaStream);
  
   } catch (err) {
     console.error('startCall:', err);
     document.getElementById('voiceOverlay').classList.remove('active');
-    setBusy(false);
-    btn.disabled  = false;
+    setBusy(false); btn.disabled = false;
     btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-    addMsg('ai', `⚠️ કૉલ ન થઈ શક્યો: ${err.message}`);
-    room = null;
+    addMsg('ai', `⚠️ કૉલ ન થઈ શક્યો: ${err.message}`); room = null;
   }
 }
-
+ 
 async function endCall() {
   if (room) { await room.disconnect(); }
   else {
     document.getElementById('voiceOverlay').classList.remove('active');
     stopViz(); setBusy(false);
     const btn = document.getElementById('startBtn');
-    btn.disabled  = false;
-    btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
+    btn.disabled = false; btn.innerHTML = '<span class="mic-anim">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
   }
 }
-
 window.addEventListener('beforeunload', () => { if (room) room.disconnect(); });
 </script>
 </body>
