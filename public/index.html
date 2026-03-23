@@ -4,7 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>ગુજરાત બસ • AI સહાયક</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='80'>🚍</text></svg>"/>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Serif+Gujarati:wght@400;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  
+  
   <script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
   <style>
     /* ══════════════════════════════════════════════════════════
@@ -73,7 +76,7 @@
     @keyframes roadShimmer { 0%,100%{opacity:.3} 50%{opacity:.9} }
     .moving-bus {
       position:fixed; bottom:10px; left:-80px; z-index:2;
-      font-size:clamp(1.4rem,4vw,2rem);
+      font-size:clamp(4rem,6vw,4rem);
       animation:driveAcross 22s linear infinite;
       filter:drop-shadow(0 0 10px rgba(255,107,0,.5));
       pointer-events:none;
@@ -812,7 +815,7 @@
       document.getElementById('voiceOverlay').classList.remove('active');
       setBusy(false); btn.disabled=false;
       btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
-      addMsg('ai',`⚠️ Token server ચાલુ નથી!`);
+      addMsg('ai',`⚠️ server ચાલુ નથી!`);
       return;
     }
 
