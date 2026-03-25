@@ -397,7 +397,7 @@ header {
 .send-icon-btn svg { width:clamp(14px,3.5vw,17px); height:clamp(14px,3.5vw,17px); fill:white; }
 .hint {
   text-align:center; font-size:clamp(.6rem,1.9vw,.71rem);
-  color:var(--txt-dim); margin-top:clamp(5px,1.5vw,8px);
+  color:var(--txt); margin-top:clamp(5px,1.5vw,8px);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -690,7 +690,10 @@ async function showSeatChart(params) {
 
   if (params?.from && params?.to && params?.date) {
     try {
-      const r = await fetch(`${TOKEN_SERVER}/buses?from=${encodeURIComponent(params.from)}&to=${encodeURIComponent(params.to)}&date=${encodeURIComponent(params.date)}`);
+      const r = await fetch(
+        `${TOKEN_SERVER}/buses?from=${encodeURIComponent(params.from)}&to=${encodeURIComponent(params.to)}&date=${encodeURIComponent(params.date)}`,
+        { headers: { 'ngrok-skip-browser-warning': 'true' } }
+      );
       const d = await r.json();
       if (d.buses?.length) { buses = d.buses; busData = buses; }
       else { addMsg('ai',`⚠️ ${params.from} → ${params.to} ના રોજ ${params.date} ઉપર કોઈ બસ નથી.`); return; }
@@ -928,7 +931,11 @@ async function startCall() {
 
   let token,lkUrl;
   try {
-    const res=await fetch(`${TOKEN_SERVER}/get-token`);
+    const res=await fetch(`${TOKEN_SERVER}/get-token`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'true'
+      }
+    });
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const d=await res.json();
     if(d.error)throw new Error(d.error);
@@ -984,9 +991,13 @@ async function startCall() {
         // Agent sends this when user picks a bus → show THAT bus's seat chart
         // msg: { type:'show_seats', bus_id:'BUS001', from:'Ahmedabad', to:'Surat', date:'2026-03-25' }
         if(msg.type==='show_seats'){
-          if(!document.getElementById('seatCard')){
-            showSeatChart({ bus_id:msg.bus_id, from:msg.from, to:msg.to, date:msg.date });
-          }
+          document.getElementById('seatCard')?.remove();
+          showSeatChart({ 
+                bus_id: msg.bus_id, 
+                from: msg.from, 
+                to: msg.to, 
+                date: msg.date 
+          });
         }
 
         // Agent's select_seat() tool fired → highlight that seat on the chart
