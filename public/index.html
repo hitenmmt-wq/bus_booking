@@ -611,7 +611,7 @@ header {
 
 <script>
 /* ─── CONFIG ──────────────────────────────────────────────── */
-const TOKEN_SERVER = "http://localhost:8080";
+const TOKEN_SERVER = "https://kasandra-nonarithmetical-aiden.ngrok-free.dev";
 const LK_URL       = "wss://busbooking-p52t2etx.livekit.cloud";
 const LK_ROOM      = "bus-booking-room";
 
@@ -629,6 +629,55 @@ const wfEl = document.getElementById('waveform');
 for (let i = 0; i < 18; i++) { const b = document.createElement('div'); b.className='wv-bar'; wfEl.appendChild(b); }
 const wvBars = wfEl.querySelectorAll('.wv-bar');
 
+function hasIndicScript(text) {
+  return /[\u0900-\u0AFF]/.test(text);
+}
+
+function isGibberish(text) {
+  const words = text.trim().split(/\s+/);
+  if (words.length < 2) return false;
+  
+  // Count words that have recognizable script
+  const recognizable = words.filter(w => 
+    /[\u0900-\u0AFF]/.test(w) ||        // Indic script
+    /^[a-zA-Z]{2,}$/.test(w) ||          // English word
+    /^\d+$/.test(w)                       // numbers
+  ).length;
+  
+  // If less than 50% recognizable, it's noise
+  return (recognizable / words.length) < 0.5;
+}
+
+const NOISE_PATTERNS = [
+  /\(chattering\)/i, /\(background/i, /\(noise\)/i,
+  /\(music\)/i, /\(beep\)/i, /\(અવાજ\)/,
+];
+
+function shouldDisplayTranscript(text, isUser) {
+  if (!text || text.trim().length < 2) return false;
+  
+  // Always show agent responses
+  if (!isUser) return true;
+  
+  // Filter noise patterns
+  if (NOISE_PATTERNS.some(p => p.test(text))) return false;
+  
+  // Filter pure gibberish
+  if (isGibberish(text)) return false;
+  
+  // Very short non-Indic text (like "ઉંમ", "hmm") — show it, it's valid
+  if (text.trim().length <= 5) return true;
+  
+  return true;
+}
+
+// Clean display text — remove noise markers but keep the core
+function cleanDisplayText(text) {
+  return text
+    .replace(/\(.*?\)/g, '')     // remove (parenthetical noise)
+    .replace(/\[.*?\]/g, '')     // remove [bracketed noise]
+    .trim();
+}
 /* ─── SEAT STATE ──────────────────────────────────────────── */
 let selectedSeats={}, activeBusId=null, busData=[];
 
@@ -791,13 +840,32 @@ function confirmSeats() {
 
 /* ─── CHAT ────────────────────────────────────────────────── */
 function addMsg(who, text) {
+  const isUser = (who === 'user');
+  
+  // Clean the text first
+  const cleaned = cleanDisplayText(text);
+  
+  // Filter check
+  if (!shouldDisplayTranscript(cleaned, isUser)) {
+    console.log(`[FILTERED ${who}]: ${text.substring(0, 50)}`);
+    return; // don't show in chat
+  }
+  
   document.getElementById('welcomeCard')?.remove();
-  const wrap=document.getElementById('chatScroll');
-  const div=document.createElement('div'); div.className=`msg ${who==='user'?'user':'ai'}`;
-  const av=document.createElement('div'); av.className=`avatar ${who==='user'?'user-av':'ai-av'}`; av.textContent=who==='user'?'👤':'🤖';
-  const bub=document.createElement('div'); bub.className='bubble';
-  bub.innerHTML=text.replace(/\n/g,'<br/>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  div.append(av,bub); wrap.appendChild(div); wrap.scrollTop=wrap.scrollHeight;
+  const wrap = document.getElementById('chatScroll');
+  const div = document.createElement('div');
+  div.className = `msg ${isUser ? 'user' : 'ai'}`;
+  const av = document.createElement('div');
+  av.className = `avatar ${isUser ? 'user-av' : 'ai-av'}`;
+  av.textContent = isUser ? '👤' : '🤖';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = cleaned
+    .replace(/\n/g, '<br/>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  div.append(av, bub);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
 }
 
 const GU_TO_EN={'અમદાવાદ':'Ahmedabad','સુરત':'Surat','વડોદરા':'Vadodara','રાજકોટ':'Rajkot','મુંબઈ':'Mumbai','પુણે':'Pune','દિલ્હી':'Delhi','બેંગ્લોર':'Bangalore'};
@@ -813,7 +881,17 @@ function checkSeatTrigger(text) { return['સીટ','seat','seating','બેઠ
 let room=null,audioCtx=null,animFrame=null;
 
 function setStatus(t){document.getElementById('voiceStatus').textContent=t;}
-function setLive(who,txt){document.getElementById('liveT').innerHTML=`<strong>${who==='user'?'👤 તમે':'🤖 Rakesh'}:</strong> ${txt}`;}
+function setLive(who, txt) {
+  const cleaned = cleanDisplayText(txt);
+  
+  // For live indicator, show a generic message if gibberish
+  const display = isGibberish(cleaned) 
+    ? (who === 'user' ? '...' : '...') 
+    : cleaned;
+  
+  document.getElementById('liveT').innerHTML = 
+    `<strong>${who === 'user' ? '👤 તમે' : '🤖 Rakesh'}:</strong> ${display}`;
+}
 function setOrbState(state){
   const orb=document.getElementById('voiceOrb');
   const rings=['ring1','ring2','ring3'].map(id=>document.getElementById(id));
@@ -874,7 +952,7 @@ async function startCall() {
       document.getElementById('voiceOverlay').classList.remove('active');
       stopViz();setOrbState('idle');setBusy(false);
       btn.disabled=false;btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે ફરી વાત કરો';
-      addMsg('ai','📵 ધન્યવાદ! તમારી યાત્રા સુરક્ષિત રહે 🙏');room=null;
+      addMsg('ai','ધન્યવાદ! તમારી યાત્રા સુરક્ષિત રહે 🙏');room=null;
     });
     room.on(LivekitClient.RoomEvent.ConnectionStateChanged,s=>{if(s==='reconnecting')setStatus('🔄 ફરી જોડાઈ રહ્યા છીએ…');});
     room.on(LivekitClient.RoomEvent.TrackSubscribed,track=>{
