@@ -414,6 +414,25 @@ header {
 .mic-bounce { animation:micB 1.8s ease-in-out infinite; display:inline-block; }
 @keyframes micB { 0%,100%{transform:scale(1)} 50%{transform:scale(1.22)} }
 
+.listen-btn {
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:clamp(10px,2.5vw,13px) clamp(16px,4vw,24px);
+  background:linear-gradient(135deg,rgba(39,212,105,.22),rgba(39,212,105,.12));
+  border:1.5px solid rgba(39,212,105,.35); border-radius:var(--radius-md);
+  color:#27D469; font-family:'Noto Sans Gujarati',sans-serif;
+  font-size:clamp(.80rem,2.5vw,.90rem); font-weight:600;
+  cursor:pointer; transition:all var(--transition);
+  margin-bottom:clamp(8px,2vw,10px); width:100%;
+}
+.listen-btn:hover { background:linear-gradient(135deg,rgba(39,212,105,.3),rgba(39,212,105,.18)); border-color:rgba(39,212,105,.5); }
+.listen-btn.active {
+  background:linear-gradient(135deg,#27D469,rgba(39,212,105,.5));
+  color:#fff; border-color:#27D469;
+  box-shadow:0 0 20px rgba(39,212,105,.4);
+}
+.listen-pulse { animation:listenPulse 1.2s ease-in-out infinite; }
+@keyframes listenPulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
 .input-row {
   display:flex; gap:7px; align-items:center;
   background:var(--bg-card); border:1.5px solid var(--border);
@@ -649,6 +668,12 @@ header {
       <span class="mic-bounce">🎙️</span>
       Rakesh સાથે Voice Call શરૂ કરો
     </button>
+    
+    <button class="listen-btn" id="listenBtn" style="display:none;" onclick="toggleManualListen()">
+      <span id="listenIcon">🎤</span>
+      <span id="listenText">શુનું શરૂ કરો</span>
+    </button>
+    
     <p class="hint">🎙️ Voice Call &nbsp;·&nbsp; ગુજરાતીમાં બોલો &nbsp;·&nbsp; Rakesh જવાબ આપશે</p>
   </div>
 </div>
@@ -965,6 +990,7 @@ function checkSeatTrigger(text) { return['સીટ','seat','seating','બેઠ
 
 /* ─── VOICE ───────────────────────────────────────────────── */
 let room=null,audioCtx=null,animFrame=null;
+let manualListenMode=false,isManualListening=false;
 
 function setStatus(t){document.getElementById('voiceStatus').textContent=t;}
 function setLive(who, txt) {
@@ -1005,7 +1031,36 @@ function stopViz(){
   wvBars.forEach(b=>{b.style.height='3px';b.style.background='rgba(255,107,0,.28)';});
 }
 
-// ✅ ADDED: Clean up audio elements before disconnect
+// ✅ MANUAL LISTEN TOGGLE
+function toggleManualListen(){
+  if(!room)return;
+  isManualListening=!isManualListening;
+  const btn=document.getElementById('listenBtn');
+  const icon=document.getElementById('listenIcon');
+  const txt=document.getElementById('listenText');
+  
+  if(isManualListening){
+    // START LISTENING
+    btn.classList.add('active','listen-pulse');
+    icon.textContent='🎧';
+    txt.textContent='શુનું બંધ કરો';
+    if(room.localParticipant){
+      room.localParticipant.setMicrophoneEnabled(true).catch(e=>console.error('Mic enable error:',e));
+    }
+    setStatus('🎤 કસો! તમારો ઇનપુટ સાંભળી રહ્યા છીએ…');
+  } else {
+    // STOP LISTENING
+    btn.classList.remove('active','listen-pulse');
+    icon.textContent='🎤';
+    txt.textContent='શુનું શરૂ કરો';
+    if(room.localParticipant){
+      room.localParticipant.setMicrophoneEnabled(false).catch(e=>console.error('Mic disable error:',e));
+    }
+    setStatus('🔒 માઇક બંધ છે. શુનું શરૂ કરવાનું બટન દબાવો!');
+  }
+}
+
+// ✅ CLEANUP FUNCTION
 function cleanupAudioElements() {
   // Remove all audio elements from the DOM
   document.querySelectorAll('audio').forEach(audio => {
@@ -1048,12 +1103,18 @@ async function startCall() {
     room.on(LivekitClient.RoomEvent.Connected,()=>{
       setOrbState('listening');setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
       setBusy(true);
+      // ✅ Show manual listen button during active call
+      document.getElementById('listenBtn').style.display='flex';
+      manualListenMode=true;
     });
     room.on(LivekitClient.RoomEvent.Disconnected,()=>{
       cleanupAudioElements();  // ← CLEANUP
       document.getElementById('voiceOverlay').classList.remove('active');
+      document.getElementById('listenBtn').style.display='none';  // ✅ Hide listen button
       stopViz();setOrbState('idle');setBusy(false);
       btn.disabled=false;btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે ફરી વાત કરો';
+      isManualListening=false;  // ✅ Reset manual listening state
+      manualListenMode=false;
       addMsg('ai','ધન્યવાદ! તમારી યાત્રા સુરક્ષિત રહે 🙏');room=null;
     });
     room.on(LivekitClient.RoomEvent.ConnectionStateChanged,s=>{if(s==='reconnecting')setStatus('🔄 ફરી જોડાઈ રહ્યા છીએ…');});
