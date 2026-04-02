@@ -309,11 +309,12 @@ header {
   transition:transform var(--transition), box-shadow var(--transition);
   user-select:none; flex-shrink:0; -webkit-user-select:none;
 }
-.seat:hover:not(.booked) { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,107,0,.3); }
+.seat:hover:not(.booked):not(.confirming-wait) { transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,107,0,.3); }
 .seat.available { background:rgba(39,212,105,.1);  color:#27D469; border-color:rgba(39,212,105,.3); }
 .seat.booked    { background:rgba(255,255,255,.03); color:var(--txt-dim); border-color:rgba(255,255,255,.07); cursor:not-allowed; opacity:.5; }
 .seat.ladies    { background:rgba(236,72,153,.1);  color:#EC4899; border-color:rgba(236,72,153,.3); }
 .seat.selected  { background:rgba(255,107,0,.22);  color:var(--saffron-glow); border-color:var(--saffron); box-shadow:0 0 0 2px rgba(255,107,0,.22); }
+.seat.confirming-wait { background:rgba(255,107,0,.3); color:var(--saffron-glow); border-color:var(--saffron); opacity:.7; cursor:not-allowed; }
 .seat-ico { font-size:.42rem; opacity:.6; }
 
 .seat-summary {
@@ -324,6 +325,7 @@ header {
 .seat-stats { display:flex; gap:clamp(8px,2vw,14px); flex-wrap:wrap; }
 .stat { font-size:clamp(.66rem,2vw,.75rem); color:var(--txt-sub); }
 .stat strong { color:var(--txt); font-weight:600; }
+
 .confirm-btn {
   padding:clamp(8px,2vw,10px) clamp(13px,3vw,20px); border-radius:var(--radius-md);
   font-size:clamp(.73rem,2.2vw,.82rem); font-weight:600;
@@ -335,6 +337,47 @@ header {
 }
 .confirm-btn:disabled { opacity:.35; cursor:not-allowed; }
 .confirm-btn:not(:disabled):hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(255,107,0,.42); }
+
+/* CONFIRMATION OVERLAY ═══════════════════ */
+.seat-confirm-overlay {
+  display:none; position:fixed; inset:0; z-index:80;
+  background:rgba(8,14,26,.95); backdrop-filter:blur(8px);
+  flex-direction:column; align-items:center; justify-content:center;
+  padding:20px; gap:20px;
+  animation:fadeInSeats .3s ease;
+}
+.seat-confirm-overlay.active { display:flex; }
+@keyframes fadeInSeats { from{opacity:0} to{opacity:1} }
+
+.confirm-msg {
+  text-align:center; font-size:clamp(1rem,4vw,1.3rem);
+  color:#fff; font-weight:600; max-width:300px;
+}
+
+.confirm-buttons {
+  display:flex; gap:clamp(10px,2vw,20px); justify-content:center; flex-wrap:wrap;
+}
+
+.yes-btn, .no-btn {
+  padding:clamp(12px,2.5vw,15px) clamp(30px,5vw,50px);
+  border-radius:var(--radius-lg); border:none;
+  font-family:'Noto Sans Gujarati',sans-serif;
+  font-size:clamp(.9rem,2.8vw,1.1rem); font-weight:700;
+  cursor:pointer; transition:all var(--transition);
+  letter-spacing:.04em;
+}
+
+.yes-btn {
+  background:linear-gradient(135deg,#27D469,#1DA35F);
+  color:#fff; box-shadow:0 4px 14px rgba(39,212,105,.4);
+}
+.yes-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(39,212,105,.5); }
+
+.no-btn {
+  background:rgba(240,69,69,.1); border:1.5px solid rgba(240,69,69,.35);
+  color:var(--danger); box-shadow:none;
+}
+.no-btn:hover { background:rgba(240,69,69,.2); border-color:var(--danger); }
 
 /* ══════════════════════════════════════════════════════════
    INPUT AREA
@@ -533,6 +576,15 @@ header {
 <div class="stars" id="stars"></div>
 <div class="moving-bus">🚌</div>
 
+<!-- ═══ SEAT CONFIRMATION OVERLAY ═════════════════════════ -->
+<div class="seat-confirm-overlay" id="seatConfirmOverlay">
+  <div class="confirm-msg" id="confirmMsg">સીટ 1A બરાબર છે?</div>
+  <div class="confirm-buttons">
+    <button class="yes-btn" onclick="respondSeatConfirmation(true)">✅ હા</button>
+    <button class="no-btn" onclick="respondSeatConfirmation(false)">❌ ના</button>
+  </div>
+</div>
+
 <!-- ═══ VOICE OVERLAY ═══════════════════════════════════════ -->
 <div class="voice-overlay" id="voiceOverlay">
   <div class="agent-info">
@@ -597,14 +649,6 @@ header {
       <span class="mic-bounce">🎙️</span>
       Rakesh સાથે Voice Call શરૂ કરો
     </button>
-    <!-- <div class="input-row" onclick="startCall()">
-      <div class="fake-input">Voice Call ઉપર ક્લિક કરો — ગુજરાતીમાં બોલો 🎙️</div>
-      <button class="send-icon-btn" tabindex="-1">
-        <svg viewBox="0 0 24 24">
-          <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
-        </svg>
-      </button>
-    </div> -->
     <p class="hint">🎙️ Voice Call &nbsp;·&nbsp; ગુજરાતીમાં બોલો &nbsp;·&nbsp; Rakesh જવાબ આપશે</p>
   </div>
 </div>
@@ -678,17 +722,21 @@ function cleanDisplayText(text) {
     .replace(/\[.*?\]/g, '')     // remove [bracketed noise]
     .trim();
 }
-/* ─── SEAT STATE ──────────────────────────────────────────── */
-let selectedSeats={}, activeBusId=null, busData=[];
 
-// Called by:
-//   1. agent DataReceived: { type:'show_seats', bus_id, from, to, date }
-//   2. TranscriptionReceived keyword fallback
+/* ─── SEAT STATE ──────────────────────── */
+let selectedSeats={}, activeBusId=null, busData=[], seatConfirmationPending=false, pendingSeatNo=null;
+
+// ✅ UPDATED: Accept bus_data DIRECTLY from backend message
 async function showSeatChart(params) {
   if (document.getElementById('seatCard')) return;
-  let buses = busData;
+  let buses = [];
 
-  if (params?.from && params?.to && params?.date) {
+  // KEY FIX: Agent sends complete bus_data in the message
+  if (params?.bus_data) {
+    buses = Array.isArray(params.bus_data) ? params.bus_data : [params.bus_data];
+    busData = buses;
+  } else if (params?.from && params?.to && params?.date) {
+    // Fallback: fetch buses if no bus_data in message
     try {
       const r = await fetch(
         `${TOKEN_SERVER}/buses?from=${encodeURIComponent(params.from)}&to=${encodeURIComponent(params.to)}&date=${encodeURIComponent(params.date)}`,
@@ -699,15 +747,10 @@ async function showSeatChart(params) {
       else { addMsg('ai',`⚠️ ${params.from} → ${params.to} ના રોજ ${params.date} ઉપર કોઈ બસ નથી.`); return; }
     } catch(e) { addMsg('ai','⚠️ બસ ડેટા મળ્યો નહીં. token_server.py ચાલુ છે?'); return; }
   }
+  
   if (!buses?.length) return;
 
-  // KEY FIX: if agent passed specific bus_id → show ONLY that bus (no tabs)
-  if (params?.bus_id) {
-    const match = buses.find(b => b.id === params.bus_id || b.bus_id === params.bus_id);
-    if (match) buses = [match];
-  }
-
-  selectedSeats={}; activeBusId=buses[0].id;
+  selectedSeats={}; seatConfirmationPending=false; pendingSeatNo=null; activeBusId=buses[0].id;
   const wrap=document.getElementById('chatScroll');
   const card=document.createElement('div');
   card.className='seat-card'; card.id='seatCard';
@@ -741,9 +784,10 @@ async function showSeatChart(params) {
   wrap.appendChild(card);
 
   if (buses.length > 1) {
-    buses.forEach(bus => {
+    buses.forEach((bus, idx) => {
       const t=document.createElement('div'); t.className='bus-tab'+(bus.id===activeBusId?' active':'');
-      t.textContent=`${bus.name} · ${bus.departure} · ₹${bus.price}`; t.onclick=()=>switchBus(bus.id);
+      t.textContent=`${bus.name} · ${bus.departure} · ₹${bus.price}`; 
+      t.onclick=()=>switchBus(idx);
       card.querySelector('#busTabs').appendChild(t);
     });
   }
@@ -751,7 +795,7 @@ async function showSeatChart(params) {
   renderDeck(); wrap.scrollTop=wrap.scrollHeight;
 }
 
-// Called when agent's select_seat() tool fires with a seat number the user dictated
+// ✅ UPDATED: Handle seat confirmation flow
 function highlightSeat(seatNo) {
   if (!seatNo) return;
   const normalized = seatNo.toString().toUpperCase().trim();
@@ -767,18 +811,55 @@ function highlightSeat(seatNo) {
     addMsg('ai', `⚠️ સીટ ${normalized} ઉપલબ્ધ નથી. ચાર્ટ પરથી બીજી સીટ પસંદ કરો.`);
     return;
   }
-  // Set as the only selected seat and re-render
+  // Set as the only selected seat and show confirmation
+  pendingSeatNo = normalized;
   selectedSeats = {};
   selectedSeats[foundSeat.name] = foundSeat;
+  seatConfirmationPending = true;
   renderDeck();
-  addMsg('ai', `🪑 સીટ ${normalized} ચિહ્નિત — "✅ સીટ બુક કરો" દબાવો.`);
-  const wrap = document.getElementById('chatScroll');
-  wrap.scrollTop = wrap.scrollHeight;
+  
+  // SHOW CONFIRMATION DIALOG
+  showSeatConfirmationDialog(normalized);
+}
+
+function showSeatConfirmationDialog(seatNo) {
+  document.getElementById('confirmMsg').textContent = `સીટ ${seatNo} બરાબર છે?`;
+  document.getElementById('seatConfirmOverlay').classList.add('active');
+}
+
+function respondSeatConfirmation(confirmed) {
+  document.getElementById('seatConfirmOverlay').classList.remove('active');
+  
+  if (!confirmed) {
+    // User said NO
+    selectedSeats = {};
+    seatConfirmationPending = false;
+    pendingSeatNo = null;
+    renderDeck();
+    addMsg('user', '❌ ના');
+    addMsg('ai', '👌 બીજી સીટ પસંદ કરો...');
+    return;
+  }
+  
+  // User said YES — send to backend
+  addMsg('user', '✅ હા');
+  if (room && pendingSeatNo) {
+    const payload = JSON.stringify({
+      type: 'confirm_seat',
+      seat_no: pendingSeatNo,
+      confirmed: true
+    });
+    room.localParticipant.publishData(new TextEncoder().encode(payload), {reliable:true});
+  }
+  
+  seatConfirmationPending = false;
+  pendingSeatNo = null;
 }
 
 function switchBus(id) {
-  activeBusId=id; selectedSeats={};
-  document.querySelectorAll('.bus-tab').forEach((t,i)=>t.classList.toggle('active',busData[i].id===id));
+  activeBusId = busData[id].id;
+  selectedSeats={};
+  document.querySelectorAll('.bus-tab').forEach((t,i)=>t.classList.toggle('active', i === id));
   renderDeck();
 }
 
@@ -804,10 +885,12 @@ function renderDeck() {
 
 function makeSeatEl(seat) {
   const el=document.createElement('div');
-  el.className=`seat ${selectedSeats[seat.name]?'selected':seat.status}`;
+  const isSelected = selectedSeats[seat.name];
+  const css = isSelected ? 'selected' : (seatConfirmationPending && isSelected ? 'confirming-wait' : seat.status);
+  el.className=`seat ${css}`;
   el.title=seat.status!=='booked'?`${seat.name} · ₹${seat.price}`:`${seat.name} · ભરેલ`;
   el.innerHTML=`<span>${seat.name}</span><span class="seat-ico">${seat.type==='window'||seat.type==='lower'?'⊡':'≡'}</span>`;
-  if (seat.status!=='booked') el.onclick=()=>toggleSeat(seat,el);
+  if (seat.status!=='booked' && !seatConfirmationPending) el.onclick=()=>toggleSeat(seat,el);
   return el;
 }
 
@@ -922,6 +1005,16 @@ function stopViz(){
   wvBars.forEach(b=>{b.style.height='3px';b.style.background='rgba(255,107,0,.28)';});
 }
 
+// ✅ ADDED: Clean up audio elements before disconnect
+function cleanupAudioElements() {
+  // Remove all audio elements from the DOM
+  document.querySelectorAll('audio').forEach(audio => {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.remove();
+  });
+}
+
 async function startCall() {
   const btn=document.getElementById('callBtn');
   if(btn.disabled)return;
@@ -954,8 +1047,10 @@ async function startCall() {
 
     room.on(LivekitClient.RoomEvent.Connected,()=>{
       setOrbState('listening');setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો');
+      setBusy(true);
     });
     room.on(LivekitClient.RoomEvent.Disconnected,()=>{
+      cleanupAudioElements();  // ← CLEANUP
       document.getElementById('voiceOverlay').classList.remove('active');
       stopViz();setOrbState('idle');setBusy(false);
       btn.disabled=false;btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે ફરી વાત કરો';
@@ -988,12 +1083,13 @@ async function startCall() {
       try{
         const msg=JSON.parse(new TextDecoder().decode(payload));
 
-        // Agent sends this when user picks a bus → show THAT bus's seat chart
-        // msg: { type:'show_seats', bus_id:'BUS001', from:'Ahmedabad', to:'Surat', date:'2026-03-25' }
+        // ✅ UPDATED: Agent sends this when user picks a bus → show THAT bus's seat chart
+        // msg: { type:'show_seats', bus_id:'BUS001', bus_data:{...}, from:'Ahmedabad', to:'Surat', date:'2026-03-25' }
         if(msg.type==='show_seats'){
           document.getElementById('seatCard')?.remove();
           showSeatChart({ 
                 bus_id: msg.bus_id, 
+                bus_data: msg.bus_data,  // ← KEY: Use bus_data directly!
                 from: msg.from, 
                 to: msg.to, 
                 date: msg.date 
@@ -1034,6 +1130,7 @@ async function startCall() {
 }
 
 async function endCall(){
+  cleanupAudioElements();  // ← CLEANUP
   if(room){await room.disconnect();}
   else{
     document.getElementById('voiceOverlay').classList.remove('active');
