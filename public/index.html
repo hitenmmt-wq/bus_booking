@@ -159,6 +159,7 @@ header {
   padding:clamp(14px,4vw,20px) clamp(10px,3.5vw,16px) 10px;
   display:flex; flex-direction:column; gap:clamp(10px,2.5vw,14px);
   scroll-behavior:smooth; overscroll-behavior:contain;
+  min-height:0;
 }
 .chat-scroll::-webkit-scrollbar { width:3px; }
 .chat-scroll::-webkit-scrollbar-thumb { background:var(--saffron-border); border-radius:2px; }
@@ -285,7 +286,7 @@ header {
 /* ═══ BUS SIDEBAR LAYOUT ════════════════════════════════════ */
 .bus-sidebar-container {
   display:grid; grid-template-columns:140px 1fr; gap:8px;
-  height:calc(100vh - 200px); max-height:600px; overflow:hidden;
+  height:420px; max-height:60vh; overflow:hidden;
 }
 .bus-sidebar {
   display:flex; flex-direction:column; gap:6px; overflow-y:auto;
@@ -428,6 +429,7 @@ header {
   border-top:1px solid var(--border);
   background:rgba(8,14,26,.96); backdrop-filter:blur(24px);
   flex-shrink:0;
+  position:sticky; bottom:0; z-index:15;
 }
 .call-btn {
   display:flex; align-items:center; justify-content:center; gap:9px;
@@ -500,7 +502,7 @@ header {
 .send-icon-btn svg { width:clamp(14px,3.5vw,17px); height:clamp(14px,3.5vw,17px); fill:white; }
 .hint {
   text-align:center; font-size:clamp(.6rem,1.9vw,.71rem);
-  color:var(--txt); margin-top:clamp(5px,1.5vw,8px);
+  color:var(--txt-sub); margin-top:clamp(5px,1.5vw,8px);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -508,8 +510,7 @@ header {
 ══════════════════════════════════════════════════════════ */
 .voice-overlay {
   display:none; position:fixed; left:8px; right:8px; bottom:8px; z-index:100;
-  max-height:45vh; min-height:240px; border-top-left-radius:28px;
-  border-top-right-radius:28px;
+  max-height:45vh; min-height:240px; border-radius:28px;
   background:rgba(8,14,26,.96); backdrop-filter:blur(20px);
   box-shadow:0 -24px 60px rgba(0,0,0,.28);
   flex-direction:column; align-items:center; justify-content:flex-start;
@@ -741,10 +742,6 @@ for (let i = 0; i < 65; i++) {
 const wfEl = document.getElementById('waveform');
 for (let i = 0; i < 18; i++) { const b = document.createElement('div'); b.className='wv-bar'; wfEl.appendChild(b); }
 const wvBars = wfEl.querySelectorAll('.wv-bar');
-
-function hasIndicScript(text) {
-  return /[\u0900-\u0AFF]/.test(text);
-}
 
 function isGibberish(text) {
   const words = text.trim().split(/\s+/);
@@ -1036,7 +1033,7 @@ async function showSeatChart(params) {
 function highlightSeat(seatNo) {
   if (!seatNo) return;
   const normalized = seatNo.toString().toUpperCase().trim();
-  const bus = busData.find(b => b.id === activeBusId);
+  const bus = busData.find(b => b.bus_id === activeBusId);
   if (!bus) return;
   let foundSeat = null;
   bus.layout.decks.forEach(d => d.rows.forEach(r =>
@@ -1156,8 +1153,10 @@ function confirmSeats() {
   document.getElementById('seatCard')?.remove();
   addMsg('user',`✅ સીટ: ${keys.join(', ')} — ${bus.operator} — ₹${fare.toLocaleString('en-IN')}`);
   
-  // ✅ CRITICAL: Call backend confirm_selected_seats tool
-  callTool('confirm_selected_seats', {selected_seats: keys.join(', ')});
+  if (room) {
+    const payload = JSON.stringify({ type: 'confirm_selected_seats', selected_seats: keys.join(', ') });
+    room.localParticipant.publishData(new TextEncoder().encode(payload), {reliable:true});
+  }
 }
 
 /* ─── CHAT ────────────────────────────────────────────────── */
