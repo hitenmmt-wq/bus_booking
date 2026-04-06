@@ -507,17 +507,20 @@ header {
    VOICE OVERLAY
 ══════════════════════════════════════════════════════════ */
 .voice-overlay {
-  display:none; position:fixed; inset:0; z-index:100;
-  background:rgba(8,14,26,.97); backdrop-filter:blur(32px);
-  flex-direction:column; align-items:center; justify-content:center;
+  display:none; position:fixed; left:8px; right:8px; bottom:8px; z-index:100;
+  max-height:45vh; min-height:240px; border-top-left-radius:28px;
+  border-top-right-radius:28px;
+  background:rgba(8,14,26,.96); backdrop-filter:blur(20px);
+  box-shadow:0 -24px 60px rgba(0,0,0,.28);
+  flex-direction:column; align-items:center; justify-content:flex-start;
   gap:clamp(14px,3.5vw,26px);
-  padding:calc(var(--sat) + clamp(16px,4vw,32px))
-         clamp(16px,4vw,24px)
-         calc(var(--sab) + clamp(16px,4vw,32px));
+  padding:calc(var(--sat) + clamp(14px,3vw,22px))
+         clamp(14px,3vw,22px)
+         calc(var(--sab) + clamp(14px,3vw,22px));
   animation:overlayIn .35s ease both; overflow-y:auto;
 }
 .voice-overlay.active { display:flex; }
-@keyframes overlayIn { from{opacity:0} to{opacity:1} }
+@keyframes overlayIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
 
 .agent-info { text-align:center; }
 .agent-name {
@@ -1281,6 +1284,21 @@ function cleanupAudioElements() {
 async function startCall() {
   const btn=document.getElementById('callBtn');
   if(btn.disabled)return;
+
+  // Reset any leftover state from a previous session
+  cleanupAudioElements();
+  stopViz();
+  setOrbState('idle');
+  setBusy(false);
+  manualListenMode=false;
+  isManualListening=false;
+  document.getElementById('listenBtn').style.display='none';
+
+  if(room){
+    try { await room.disconnect(); } catch(e){ console.warn('cleanup disconnect failed', e); }
+    room=null;
+  }
+
   btn.disabled=true; btn.innerHTML='<span>⏳</span> જોડાઈ રહ્યા છીએ…';
   document.getElementById('voiceOverlay').classList.add('active');
   setOrbState('connecting'); setStatus('ટોકન મળી રહ્યો છે…');
@@ -1419,10 +1437,15 @@ async function startCall() {
 
 async function endCall(){
   cleanupAudioElements();  // ← CLEANUP
-  if(room){await room.disconnect();}
-  else{
+  stopViz(); setBusy(false);
+  manualListenMode=false;
+  isManualListening=false;
+  document.getElementById('listenBtn').style.display='none';
+
+  if(room){
+    try { await room.disconnect(); } catch(e){ console.warn('disconnect failed', e); }
+  } else {
     document.getElementById('voiceOverlay').classList.remove('active');
-    stopViz();setBusy(false);
     const btn=document.getElementById('callBtn');
     btn.disabled=false;btn.innerHTML='<span class="mic-bounce">🎙️</span> Rakesh સાથે Voice Call શરૂ કરો';
   }
