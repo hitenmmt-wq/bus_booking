@@ -1330,6 +1330,11 @@ async function startCall() {
       if(track.kind===LivekitClient.Track.Kind.Audio){
         const el=track.attach();el.autoplay=true;document.body.appendChild(el);
         setOrbState('speaking');setStatus('🔊 Rakesh બોલી રહ્યા છે…');
+        
+        // ✅ Clear speaking state when audio finishes
+        el.addEventListener('ended',()=>{
+          setOrbState('listening');setStatus('👂 સાંભળી રહ્યા છીએ…');
+        },{once:true});
       }
     });
     room.on(LivekitClient.RoomEvent.TrackUnsubscribed,track=>{track.detach();setOrbState('listening');setStatus('👂 સાંભળી રહ્યા છીએ…');});
