@@ -282,6 +282,47 @@ header {
 }
 .bus-tab.active { background:rgba(255,107,0,.22); border-color:var(--saffron); color:#fff; font-weight:600; }
 
+/* ═══ BUS SIDEBAR LAYOUT ════════════════════════════════════ */
+.bus-sidebar-container {
+  display:grid; grid-template-columns:140px 1fr; gap:8px;
+  height:calc(100vh - 200px); max-height:600px; overflow:hidden;
+}
+.bus-sidebar {
+  display:flex; flex-direction:column; gap:6px; overflow-y:auto;
+  background:rgba(12,21,37,.5); border-radius:var(--radius-md);
+  border:1px solid var(--border-soft); padding:8px;
+  scrollbar-width:thin;
+}
+.bus-sidebar::-webkit-scrollbar { width:6px; }
+.bus-sidebar::-webkit-scrollbar-track { background:transparent; }
+.bus-sidebar::-webkit-scrollbar-thumb { background:rgba(255,107,0,.3); border-radius:99px; }
+.bus-sidebar::-webkit-scrollbar-thumb:hover { background:rgba(255,107,0,.5); }
+
+.bus-item {
+  padding:9px 10px; border-radius:var(--radius-sm);
+  font-size:clamp(.6rem,1.8vw,.68rem); font-weight:500;
+  background:rgba(255,107,0,.06); border:1px solid rgba(255,107,0,.15);
+  color:var(--txt-sub); cursor:pointer; transition:all var(--transition);
+  text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  user-select:none;
+}
+.bus-item:hover { background:rgba(255,107,0,.12); border-color:rgba(255,107,0,.25); }
+.bus-item.active {
+  background:linear-gradient(135deg,rgba(255,107,0,.3),rgba(255,107,0,.15));
+  color:#fff; border-color:var(--saffron);
+  box-shadow:0 0 12px rgba(255,107,0,.25);
+  font-weight:600;
+}
+
+.bus-main-area {
+  display:flex; flex-direction:column; gap:8px; overflow-y:auto;
+  scrollbar-width:thin;
+}
+.bus-main-area::-webkit-scrollbar { width:6px; }
+.bus-main-area::-webkit-scrollbar-track { background:transparent; }
+.bus-main-area::-webkit-scrollbar-thumb { background:rgba(255,107,0,.3); border-radius:99px; }
+.bus-main-area::-webkit-scrollbar-thumb:hover { background:rgba(255,107,0,.5); }
+
 .seat-legend { display:flex; gap:9px; flex-wrap:wrap; margin-bottom:9px; }
 .legend-item { display:flex; align-items:center; gap:4px; font-size:clamp(.62rem,1.9vw,.68rem); color:var(--txt-sub); }
 .ldot { width:10px; height:10px; border-radius:3px; border:1px solid; flex-shrink:0; }
@@ -752,6 +793,174 @@ function cleanDisplayText(text) {
 let selectedSeats={}, activeBusId=null, busData=[], seatConfirmationPending=false, pendingSeatNo=null;
 
 // ✅ UPDATED: Accept bus_data DIRECTLY from backend message
+// ✅ NEW: Display bus list in sidebar for user to select from
+function showBusSidebar(buses, passengerCount, totalBuses) {
+  if (!buses || !buses.length) return;
+  
+  if (document.getElementById('busSidebarContainer')) return; // Already shown
+  busData = buses;
+  activeBusId = buses[0].bus_id;  // Use bus_id, not id
+  
+  const wrap = document.getElementById('chatScroll');
+  const container = document.createElement('div');
+  container.id = 'busSidebarContainer';
+  container.innerHTML = `
+    <div class="bus-sidebar-container">
+      <div class="bus-sidebar" id="busSidebarList"></div>
+      <div class="bus-main-area" id="busMainArea">
+        <div style="color:var(--txt-sub); font-size:clamp(.7rem,2vw,.8rem); margin-bottom:8px;">
+          <strong>🛜 ${buses.length}</strong> બસ · <strong>👥 ${passengerCount}</strong> મુસાફર
+          ${totalBuses > buses.length ? `<br/>(કુલ ${totalBuses} બસ)` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  wrap.appendChild(container);
+  
+  // Populate sidebar with bus list
+  const sidebar = document.getElementById('busSidebarList');
+  buses.forEach((bus, idx) => {
+    const item = document.createElement('div');
+    item.className = 'bus-item' + (idx === 0 ? ' active' : '');
+    item.innerHTML = `
+      <div style="font-weight:600; font-size:.75em;">${bus.operator || `Bus ${idx + 1}`}</div>
+      <div style="font-size:.65em; color:var(--txt-dim); margin-top:2px;">${bus.departure_time || bus.departure}</div>
+      <div style="font-size:.75em; color:var(--saffron-glow); margin-top:3px;">₹${bus.price}</div>
+    `;
+    item.onclick = () => switchBusInSidebar(idx, bus, container);
+    sidebar.appendChild(item);
+  });
+  
+  // Show first bus by default
+  renderSeatChartForBus(buses[0], container);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+// ✅ Handle bus switching in sidebar
+function switchBusInSidebar(idx, bus, container) {
+  activeBusId = bus.bus_id;  // Use bus_id
+  selectedSeats = {};
+  
+  // Update active item in sidebar
+  document.querySelectorAll('.bus-item').forEach((item, i) => {
+    item.classList.toggle('active', i === idx);
+  });
+  
+  // Render new bus chart
+  renderSeatChartForBus(bus, container);
+}
+
+// ✅ Render seat chart for selected bus within sidebar
+function renderSeatChartForBus(bus, container) {
+  const mainArea = container.querySelector('#busMainArea');
+  if (!mainArea) return;
+  
+  // Clear previous content except header
+  const children = mainArea.children;
+  for (let i = children.length - 1; i >= 1; i--) {
+    children[i].remove();
+  }
+  
+  // Map field names from backend structure
+  const departure = bus.departure_time || bus.departure || '—';
+  const arrival = bus.arrival_time || bus.arrival || '—';
+  const operator = bus.operator || 'Bus';
+  const price = bus.price || 0;
+  const duration = bus.duration || '—';
+  
+  // Add bus details
+  const busInfo = document.createElement('div');
+  busInfo.style.cssText = 'font-size:clamp(.7rem,2vw,.85rem); color:var(--txt-sub); margin-bottom:8px; padding:8px; background:rgba(255,107,0,.06); border-radius:var(--radius-sm); border-left:2px solid var(--saffron);';
+  busInfo.innerHTML = `
+    <div><strong style="color:#fff;">${operator}</strong> · ${departure} → ${arrival}</div>
+    <div style="margin-top:3px; margin-bottom:3px;">${duration}</div>
+    <div>Price: <strong style="color:var(--saffron-glow);">₹${price}/person</strong></div>
+  `;
+  mainArea.appendChild(busInfo);
+  
+  // Add seat legend
+  const legend = document.createElement('div');
+  legend.className = 'seat-legend';
+  legend.innerHTML = `
+    <div class="legend-item"><div class="ldot" style="background:rgba(39,212,105,.15);border-color:rgba(39,212,105,.4)"></div>ઉપલબ્ધ</div>
+    <div class="legend-item"><div class="ldot" style="background:rgba(236,72,153,.12);border-color:rgba(236,72,153,.35)"></div>મહિલા</div>
+    <div class="legend-item"><div class="ldot" style="background:rgba(255,107,0,.2);border-color:var(--saffron)"></div>પસંદ</div>
+    <div class="legend-item"><div class="ldot" style="background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);opacity:.5"></div>ભરેલ</div>
+  `;
+  mainArea.appendChild(legend);
+  
+  // Add deck area
+  const deckArea = document.createElement('div');
+  deckArea.id = 'deckArea';
+  mainArea.appendChild(deckArea);
+  
+  // Render decks
+  renderDeckForBus(bus, deckArea);
+  
+  // Add seat summary
+  const summary = document.createElement('div');
+  summary.className = 'seat-summary';
+  summary.innerHTML = `
+    <div class="seat-stats">
+      <div class="stat">ઉપ: <strong id="avCount">—</strong></div>
+      <div class="stat">પસ: <strong id="selCount">0</strong></div>
+      <div class="stat">₹ <strong id="fareTotal">0</strong></div>
+    </div>
+    <button class="confirm-btn" id="confirmSeatsBtn" disabled onclick="confirmSeats()">✅ સીટ બુક કરો</button>
+  `;
+  mainArea.appendChild(summary);
+  
+  updateSeatSummary();
+}
+
+// ✅ Render deck for specific bus
+function renderDeckForBus(bus, deckArea) {
+  deckArea.innerHTML = '';
+  
+  // Handle both layout.decks structure (from token_generator) and direct seats array
+  if (bus.layout && bus.layout.decks) {
+    // New structure: layout.decks
+    bus.layout.decks.forEach(deck => {
+      const dl = document.createElement('div');
+      dl.className = 'deck-lbl';
+      dl.textContent = deck.label;
+      deckArea.appendChild(dl);
+      
+      const rw = document.createElement('div');
+      rw.className = 'seat-rows';
+      
+      deck.rows.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'seat-row';
+        
+        const rn = document.createElement('div');
+        rn.className = 'row-num';
+        rn.textContent = row.rowNo;
+        rowEl.appendChild(rn);
+        
+        row.left.forEach(s => rowEl.appendChild(makeSeatEl(s)));
+        
+        const ai = document.createElement('div');
+        ai.className = 'aisle';
+        rowEl.appendChild(ai);
+        
+        row.right.forEach(s => rowEl.appendChild(makeSeatEl(s)));
+        
+        rw.appendChild(rowEl);
+      });
+      
+      deckArea.appendChild(rw);
+    });
+  } else {
+    // Fallback: no layout available
+    const notice = document.createElement('div');
+    notice.style.cssText = 'color:var(--txt-dim); font-size:.8em; padding:12px; text-align:center;';
+    notice.textContent = 'સીટ ચાર્ટ લોડ કરી રહ્યા છીએ...';
+    deckArea.appendChild(notice);
+  }
+}
+
 async function showSeatChart(params) {
   if (document.getElementById('seatCard')) return;
   let buses = [];
@@ -775,7 +984,7 @@ async function showSeatChart(params) {
   
   if (!buses?.length) return;
 
-  selectedSeats={}; seatConfirmationPending=false; pendingSeatNo=null; activeBusId=buses[0].id;
+  selectedSeats={}; seatConfirmationPending=false; pendingSeatNo=null; activeBusId=buses[0].bus_id;
   const wrap=document.getElementById('chatScroll');
   const card=document.createElement('div');
   card.className='seat-card'; card.id='seatCard';
@@ -810,7 +1019,7 @@ async function showSeatChart(params) {
 
   if (buses.length > 1) {
     buses.forEach((bus, idx) => {
-      const t=document.createElement('div'); t.className='bus-tab'+(bus.id===activeBusId?' active':'');
+      const t=document.createElement('div'); t.className='bus-tab'+(bus.bus_id===activeBusId?' active':'');
       t.textContent=`${bus.name} · ${bus.departure} · ₹${bus.price}`; 
       t.onclick=()=>switchBus(idx);
       card.querySelector('#busTabs').appendChild(t);
@@ -882,14 +1091,14 @@ function respondSeatConfirmation(confirmed) {
 }
 
 function switchBus(id) {
-  activeBusId = busData[id].id;
+  activeBusId = busData[id].bus_id;
   selectedSeats={};
   document.querySelectorAll('.bus-tab').forEach((t,i)=>t.classList.toggle('active', i === id));
   renderDeck();
 }
 
 function renderDeck() {
-  const bus=busData.find(b=>b.id===activeBusId);
+  const bus=busData.find(b=>b.bus_id===activeBusId);
   const area=document.getElementById('deckArea');
   if (!area||!bus) return; area.innerHTML='';
   bus.layout.decks.forEach(deck => {
@@ -926,7 +1135,7 @@ function toggleSeat(seat,el) {
 }
 
 function updateSeatSummary() {
-  const bus=busData.find(b=>b.id===activeBusId); if(!bus) return;
+  const bus=busData.find(b=>b.bus_id===activeBusId); if(!bus) return;
   let avail=0;
   bus.layout.decks.forEach(d=>d.rows.forEach(r=>[...r.left,...r.right].forEach(s=>{if(s.status!=='booked')avail++;})));
   const keys=Object.keys(selectedSeats);
@@ -937,16 +1146,15 @@ function updateSeatSummary() {
 }
 
 function confirmSeats() {
-  const bus=busData.find(b=>b.id===activeBusId);
+  const bus=busData.find(b=>b.bus_id===activeBusId);
   const keys=Object.keys(selectedSeats);
   const fare=keys.reduce((s,k)=>s+selectedSeats[k].price,0);
   if (!keys.length||!bus) return;
   document.getElementById('seatCard')?.remove();
-  addMsg('user',`✅ સીટ: ${keys.join(', ')} — ${bus.name} — ₹${fare.toLocaleString('en-IN')}`);
-  if (room) {
-    const payload=JSON.stringify({type:'seats_selected',bus:bus.name,route:bus.route,seats:keys,fare});
-    room.localParticipant.publishData(new TextEncoder().encode(payload),{reliable:true});
-  }
+  addMsg('user',`✅ સીટ: ${keys.join(', ')} — ${bus.operator} — ₹${fare.toLocaleString('en-IN')}`);
+  
+  // ✅ CRITICAL: Call backend confirm_selected_seats tool
+  callTool('confirm_selected_seats', {selected_seats: keys.join(', ')});
 }
 
 /* ─── CHAT ────────────────────────────────────────────────── */
@@ -1144,6 +1352,13 @@ async function startCall() {
       try{
         const msg=JSON.parse(new TextDecoder().decode(payload));
 
+        // ✅ NEW: Agent sends list of buses for selection (3 buses initially)
+        // msg: { type:'show_buses', buses:[...], passenger_count:2, total_buses:15 }
+        if(msg.type==='show_buses'){
+          document.getElementById('seatCard')?.remove();
+          showBusSidebar(msg.buses, msg.passenger_count, msg.total_buses);
+        }
+
         // ✅ UPDATED: Agent sends this when user picks a bus → show THAT bus's seat chart
         // msg: { type:'show_seats', bus_id:'BUS001', bus_data:{...}, from:'Ahmedabad', to:'Surat', date:'2026-03-25' }
         if(msg.type==='show_seats'){
@@ -1170,6 +1385,13 @@ async function startCall() {
         if(msg.type==='booking_confirmed'){
           document.getElementById('seatCard')?.remove();
           addMsg('ai', `🎉 બુકિંગ કન્ફર્મ! PNR: ${msg.pnr||'—'} · સીટ: ${msg.seat_no||'—'}`);
+        }
+
+        // User confirmed seats in sidebar → proceed to boarding
+        // msg: { type:'seats_confirmed', seats:['1A','2B'], bus_id:'BUS001' }
+        if(msg.type==='seats_confirmed'){
+          document.getElementById('busSidebarContainer')?.remove();
+          // Backend will send boarding point questions
         }
 
         if(msg.type==='transcript'&&msg.text){setLive('rakesh',msg.text);if(msg.final)addMsg('ai',msg.text);}
