@@ -668,7 +668,7 @@ function updateFooter() {
   if (btn) btn.disabled = !exact;
   if (warn) {
     if (tooFew) {
-      warn.textContent = `⚠️ ${numPassengers} મુસાફર માટે ${numPassengers} સીટ પસંદ કરો (${selKeys.length} પસ્ `)
+      warn.textContent = `⚠️ ${numPassengers} મુસાફર માટે ${numPassengers} સીટ પસંદ કરો ${selKeys.length} પસ્ `;
       warn.classList.add('show');
     } else {
       warn.classList.remove('show');
