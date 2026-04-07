@@ -444,18 +444,34 @@ function addMsg(who, text) {
  * Renders left sidebar (bus list) + right seat chart.
  */
 function showBusSeatPanel(buses, passengerCount, totalBuses) {
-  if (!buses || !buses.length) return;
+  console.log('🚌 showBusSeatPanel called with:', {
+    buses: buses?.length || 0,
+    passengerCount,
+    totalBuses,
+    busesData: buses
+  });
+  
+  if (!buses || !buses.length) {
+    console.warn('⚠️ No buses provided to showBusSeatPanel');
+    return;
+  }
+  
+  console.log('🗑️ Removing old panel if exists');
   // Remove old panel if exists
   seatCardEl?.remove(); seatCardEl = null;
+  
+  console.log('📝 Setting up panel state');
   allBuses = buses;
   numPassengers = passengerCount || 1;
   activeBusIdx = 0;
   selectedSeats = {};
   agentHighlightedSeat = null;
 
+  console.log('🏠 Removing welcome card');
   document.getElementById('welcomeCard')?.remove();
   const wrap = document.getElementById('chatScroll');
 
+  console.log('🏗️ Creating bus seat card element');
   const card = document.createElement('div');
   card.className = 'bus-seat-card';
   card.id = 'busSeatPanel';
@@ -466,6 +482,9 @@ function showBusSeatPanel(buses, passengerCount, totalBuses) {
   const sub = hasMultipleBuses
     ? `${totalBuses > buses.length ? `કુલ ${totalBuses} માંથી` : ''} — ${buses[0].from_city||''} → ${buses[0].to_city||''}`
     : `${buses[0].departure_time||''} — ${buses[0].from_city||''} → ${buses[0].to_city||''}`;
+
+  console.log('📋 Panel title:', title);
+  console.log('📋 Panel subtitle:', sub);
 
   card.innerHTML = `
     <div class="bsp-header">
@@ -509,21 +528,35 @@ function showBusSeatPanel(buses, passengerCount, totalBuses) {
 
   wrap.appendChild(card);
   seatCardEl = card;
+  console.log('✅ Bus seat card added to DOM');
 
   // Build bus list sidebar
+  console.log('🚌 Building bus list sidebar');
   buildBusList();
 
   // Show first bus seat chart
+  console.log('💺 Switching to first bus (index 0)');
   switchToBus(0);
 
+  console.log('📜 Scrolling to bottom');
   wrap.scrollTop = wrap.scrollHeight;
+  console.log('✅ showBusSeatPanel completed successfully');
 }
 
 function buildBusList() {
+  console.log('🏗️ buildBusList called');
   const col = document.getElementById('busListCol');
-  if (!col) return;
+  if (!col) {
+    console.error('❌ busListCol element not found');
+    return;
+  }
+  
+  console.log('🗑️ Clearing existing bus list');
   col.innerHTML = '';
+  
+  console.log('🚌 Building list for', allBuses.length, 'buses');
   allBuses.forEach((bus, idx) => {
+    console.log(`🚌 Adding bus ${idx + 1}:`, bus.operator, bus.departure_time);
     const item = document.createElement('div');
     item.className = 'bus-item' + (idx === activeBusIdx ? ' active' : '');
     item.dataset.idx = idx;
@@ -533,27 +566,37 @@ function buildBusList() {
       <div class="bi-price">₹${bus.price || 0}</div>
     `;
     item.onclick = () => {
+      console.log('👆 User clicked bus', idx + 1);
       // User manually switching bus — notify agent
       switchToBus(idx);
       sendToAgent({ type: 'user_switched_bus', bus_id: bus.bus_id || bus.id, bus_index: idx + 1 });
     };
     col.appendChild(item);
   });
+  console.log('✅ Bus list built successfully');
 }
 
 function switchToBus(idx) {
+  console.log('🔄 switchToBus called with index:', idx);
   activeBusIdx = idx;
   selectedSeats = {};
   agentHighlightedSeat = null;
 
+  console.log('🎯 Updating active state in sidebar');
   // Update active state in sidebar
   document.querySelectorAll('#busListCol .bus-item').forEach((el, i) => {
     el.classList.toggle('active', i === idx);
   });
 
   const bus = allBuses[idx];
-  if (!bus) return;
+  if (!bus) {
+    console.error('❌ Bus not found at index:', idx);
+    return;
+  }
+  
+  console.log('🚌 Switched to bus:', bus.operator, 'ID:', bus.bus_id);
 
+  console.log('📝 Updating bus info header');
   // Update bus info header
   const infoEl = document.getElementById('scBusInfo');
   if (infoEl) {
@@ -561,23 +604,47 @@ function switchToBus(idx) {
       <h4>${bus.operator || '—'} &nbsp;·&nbsp; ${bus.bus_type || ''}</h4>
       <p>${bus.departure_time || '—'} → ${bus.arrival_time || '—'} &nbsp;|&nbsp; ₹${bus.price || 0}/person &nbsp;|&nbsp; ${bus.duration || ''}</p>
     `;
+    console.log('✅ Bus info header updated');
+  } else {
+    console.warn('⚠️ scBusInfo element not found');
   }
 
+  console.log('💺 Rendering seat chart');
   renderSeatChart(bus);
+  
+  console.log('📊 Updating footer stats');
   updateFooter();
+  
+  console.log('✅ switchToBus completed');
 }
 
 function renderSeatChart(bus) {
+  console.log('💺 renderSeatChart called for bus:', bus.operator);
   const area = document.getElementById('deckScrollArea');
-  if (!area) return;
+  if (!area) {
+    console.error('❌ deckScrollArea element not found');
+    return;
+  }
+  
+  console.log('🗑️ Clearing existing seat chart');
   area.innerHTML = '';
 
+  console.log('🔍 Checking bus layout:', {
+    hasLayout: !!bus.layout,
+    hasDecks: !!(bus.layout?.decks),
+    deckCount: bus.layout?.decks?.length || 0
+  });
+
   if (!bus.layout || !bus.layout.decks || !bus.layout.decks.length) {
+    console.warn('⚠️ No seat layout available for bus');
     area.innerHTML = '<div class="no-layout-msg">સીટ ચાર્ટ ઉપલબ્ધ નથી.<br/>Rakesh ને સીટ નંબર કહો.</div>';
     return;
   }
 
-  bus.layout.decks.forEach(deck => {
+  console.log('🏗️ Building seat chart with', bus.layout.decks.length, 'decks');
+  bus.layout.decks.forEach((deck, deckIdx) => {
+    console.log(`🏗️ Building deck ${deckIdx + 1}:`, deck.label, 'with', deck.rows?.length || 0, 'rows');
+    
     const dl = document.createElement('div');
     dl.className = 'deck-lbl';
     dl.textContent = deck.label;
@@ -586,7 +653,9 @@ function renderSeatChart(bus) {
     const rowsWrap = document.createElement('div');
     rowsWrap.className = 'seat-rows';
 
-    deck.rows.forEach(row => {
+    deck.rows.forEach((row, rowIdx) => {
+      console.log(`  🪑 Building row ${rowIdx + 1}:`, row.rowNo, 'left:', row.left?.length || 0, 'right:', row.right?.length || 0);
+      
       const rowEl = document.createElement('div');
       rowEl.className = 'seat-row';
       const rn = document.createElement('div');
@@ -600,6 +669,8 @@ function renderSeatChart(bus) {
 
     area.appendChild(rowsWrap);
   });
+  
+  console.log('✅ Seat chart rendered successfully');
 }
 
 function makeSeatEl(seat) {
@@ -767,12 +838,18 @@ function focusBusFromAgent(busId, busIndex) {
 
 /* ─── SEND DATA TO AGENT ─────────────────────── */
 function sendToAgent(payload) {
-  if (!room) return;
+  console.log('📤 sendToAgent called with:', payload);
+  if (!room) {
+    console.warn('⚠️ No room connection, cannot send to agent');
+    return;
+  }
   try {
     const data = new TextEncoder().encode(JSON.stringify(payload));
+    console.log('📡 Publishing data to agent:', data.length, 'bytes');
     room.localParticipant.publishData(data, { reliable: true });
+    console.log('✅ Data sent to agent successfully');
   } catch (e) {
-    console.warn('sendToAgent failed', e);
+    console.error('❌ sendToAgent failed:', e);
   }
 }
 
@@ -895,53 +972,77 @@ async function startCall() {
 
     /* ─── DATA MESSAGES FROM AGENT ──────────────── */
     room.on(LivekitClient.RoomEvent.DataReceived, payload => {
+      console.log('🔄 DataReceived event triggered');
       try {
         const msg = JSON.parse(new TextDecoder().decode(payload));
+        console.log('📨 Received message from agent:', msg);
 
         // ① Agent sends list of buses (after passenger count collected)
         // { type:'show_buses', buses:[...], passenger_count:2, total_buses:15 }
         if (msg.type === 'show_buses') {
+          console.log('🚌 Processing show_buses message:', {
+            busCount: msg.buses?.length,
+            passengerCount: msg.passenger_count,
+            totalBuses: msg.total_buses
+          });
           showBusSeatPanel(msg.buses, msg.passenger_count, msg.total_buses);
         }
 
         // ② Agent selected a specific bus and wants to show its seats
         // { type:'show_seats', bus_id:'BUS001', bus_data:{...}, from, to, date }
         if (msg.type === 'show_seats') {
+          console.log('💺 Processing show_seats message:', {
+            busId: msg.bus_id,
+            hasBusData: !!msg.bus_data,
+            from: msg.from,
+            to: msg.to,
+            date: msg.date
+          });
           const busArr = msg.bus_data
             ? (Array.isArray(msg.bus_data) ? msg.bus_data : [msg.bus_data])
             : allBuses.filter(b => (b.bus_id || b.id) === msg.bus_id);
 
+          console.log('🔍 Bus array for seats:', busArr.length, 'buses found');
           if (busArr.length) {
             if (!seatCardEl) {
+              console.log('🆕 Creating new seat panel');
               // Panel not open yet — create it
               showBusSeatPanel(busArr, numPassengers, busArr.length);
             } else {
+              console.log('🔄 Focusing existing panel on bus:', msg.bus_id);
               // Panel already open — just focus the right bus
               focusBusFromAgent(msg.bus_id, null);
             }
+          } else {
+            console.warn('⚠️ No buses found for show_seats');
           }
         }
 
         // ③ Agent called select_seat(seat_no) — highlight on chart
         // { type:'highlight_seat', seat_no:'1A' }
         if (msg.type === 'highlight_seat' && msg.seat_no) {
+          console.log('🎯 Processing highlight_seat:', msg.seat_no);
           highlightSeatFromAgent(msg.seat_no);
         }
 
         // ④ Booking confirmed — close panel, show success
         // { type:'booking_confirmed', pnr, seat_no, operator, fare }
         if (msg.type === 'booking_confirmed') {
+          console.log('🎉 Processing booking_confirmed:', msg);
           seatCardEl?.remove(); seatCardEl = null;
           addMsg('ai', `🎉 બુકિંગ કન્ફર્મ! PNR: ${msg.pnr||'—'} · સીટ: ${msg.seat_no||'—'} · ₹${msg.fare||'—'}`);
         }
 
         // ⑤ Agent requests FE to reset seat panel (e.g. user changed date/bus)
         if (msg.type === 'reset_panel') {
+          console.log('🔄 Processing reset_panel');
           seatCardEl?.remove(); seatCardEl = null;
           allBuses = []; selectedSeats = {};
         }
 
-      } catch(_) {}
+      } catch(e) {
+        console.error('❌ Error processing DataReceived:', e);
+      }
     });
 
     await room.connect(lkUrl, token);
