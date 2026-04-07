@@ -1126,21 +1126,21 @@ function showJourneyBusSelection(journey, buses, passengerCount) {
     </div>
     <div class="bus-list">
       ${buses.map(bus => `
-        <div class="bus-card" data-bus-id="${bus.id}">
+        <div class="bus-card" data-bus-id="${bus.bus_id || bus.id}">
           <div class="bus-header">
-            <h4>${bus.name}</h4>
-            <div class="bus-price">₹${bus.fare}</div>
+            <h4>${bus.operator || bus.name || 'Unknown Bus'}</h4>
+            <div class="bus-price">₹${bus.price || bus.fare || 0}</div>
           </div>
           <div class="bus-details">
-            <span class="departure">🕰️ ${bus.departure}</span>
-            <span class="duration">⏱️ ${bus.duration}</span>
-            <span class="available-seats">💺 ${bus.available_seats} seats</span>
+            <span class="departure">🕰️ ${bus.departure_time || bus.departure || 'N/A'}</span>
+            <span class="duration">⏱️ ${bus.duration || 'N/A'}</span>
+            <span class="available-seats">💺 ${bus.seats_available || bus.available_seats || 0} seats</span>
           </div>
           <div class="bus-actions">
-            <button onclick="showBusSeats('${bus.id}')" class="view-seats-btn">💺 View Seats</button>
-            <button onclick="selectBusVoice('${bus.id}')" class="voice-select-btn">🎤 Select via Voice</button>
+            <button onclick="showBusSeats('${bus.bus_id || bus.id}')" class="view-seats-btn">💺 View Seats</button>
+            <button onclick="selectBusVoice('${bus.bus_id || bus.id}')" class="voice-select-btn">🎤 Select via Voice</button>
           </div>
-          <div class="seat-layout" id="seats-${bus.id}" style="display:none;"></div>
+          <div class="seat-layout" id="seats-${bus.bus_id || bus.id}" style="display:none;"></div>
         </div>
       `).join('')}
     </div>
@@ -1152,20 +1152,28 @@ function showJourneyBusSelection(journey, buses, passengerCount) {
 
 // ② Show seats for selected bus
 function showBusSeats(busId) {
-  const bus = availableBuses.find(b => b.id === busId);
-  if (!bus) return;
+  const bus = availableBuses.find(b => (b.bus_id || b.id) === busId);
+  if (!bus) {
+    console.error('Bus not found:', busId);
+    return;
+  }
   
   const seatContainer = document.getElementById(`seats-${busId}`);
+  if (!seatContainer) {
+    console.error('Seat container not found for bus:', busId);
+    return;
+  }
+  
   if (seatContainer.style.display === 'none') {
     // Show seats
     seatContainer.style.display = 'block';
-    seatContainer.innerHTML = generateSeatLayout(bus.seats, busId);
+    seatContainer.innerHTML = generateSeatLayout(bus.seats || [], busId);
     
     // Send bus selection to agent
     sendDataToAgent({
       type: 'bus_selected',
       bus_id: busId,
-      bus_name: bus.name,
+      bus_name: bus.operator || bus.name || 'Unknown Bus',
       action: 'view_seats'
     });
   } else {
@@ -1176,9 +1184,16 @@ function showBusSeats(busId) {
 
 // ③ Generate seat layout HTML
 function generateSeatLayout(seats, busId) {
+  if (!seats || !Array.isArray(seats)) {
+    return '<div class="seat-map"><p>સીટ લેઆઉટ ઉપલબ્ધ નથી</p></div>';
+  }
+  
   const seatRows = {};
   seats.forEach(seat => {
-    const row = seat.seat_no.match(/\d+/)[0];
+    const seatNo = seat.seat_no || seat.seat_number || seat.number;
+    if (!seatNo) return;
+    
+    const row = seatNo.match(/\d+/)?.[0] || '1';
     if (!seatRows[row]) seatRows[row] = [];
     seatRows[row].push(seat);
   });
@@ -1186,14 +1201,15 @@ function generateSeatLayout(seats, busId) {
   let html = '<div class="seat-map">';
   Object.keys(seatRows).sort((a,b) => a-b).forEach(row => {
     html += `<div class="seat-row">`;
-    seatRows[row].sort((a,b) => a.seat_no.localeCompare(b.seat_no)).forEach(seat => {
+    seatRows[row].sort((a,b) => (a.seat_no || a.seat_number || a.number).localeCompare(b.seat_no || b.seat_number || b.number)).forEach(seat => {
+      const seatNo = seat.seat_no || seat.seat_number || seat.number;
       const isAvailable = seat.status === 'available';
-      const isSelected = selectedBusSeats[busId]?.includes(seat.seat_no);
+      const isSelected = selectedBusSeats[busId]?.includes(seatNo);
       html += `
         <div class="seat ${isAvailable ? 'available' : 'occupied'} ${isSelected ? 'selected' : ''}" 
-             data-seat="${seat.seat_no}" data-bus="${busId}"
-             onclick="${isAvailable ? `toggleSeat('${seat.seat_no}', '${busId}')` : ''}">
-          ${seat.seat_no}
+             data-seat="${seatNo}" data-bus="${busId}"
+             onclick="${isAvailable ? `toggleSeat('${seatNo}', '${busId}')` : ''}">
+          ${seatNo}
         </div>`;
     });
     html += '</div>';
@@ -1227,7 +1243,9 @@ function toggleSeat(seatNo, busId) {
   
   // Update UI
   const seatEl = document.querySelector(`[data-seat="${seatNo}"][data-bus="${busId}"]`);
-  seatEl.classList.toggle('selected');
+  if (seatEl) {
+    seatEl.classList.toggle('selected');
+  }
   
   // Send to agent
   sendDataToAgent({
@@ -1241,14 +1259,19 @@ function toggleSeat(seatNo, busId) {
 
 // ⑤ Voice-based bus selection
 function selectBusVoice(busId) {
-  const bus = availableBuses.find(b => b.id === busId);
+  const bus = availableBuses.find(b => b.id === busId || b.bus_id === busId);
+  if (!bus) {
+    console.error('Bus not found for voice selection:', busId);
+    return;
+  }
+  
   sendDataToAgent({
     type: 'bus_selected_voice',
     bus_id: busId,
-    bus_name: bus.name,
+    bus_name: bus.operator || bus.name || 'Unknown Bus',
     action: 'voice_selection'
   });
-  addMsg('user', `${bus.name} સેલેક્ટ કર્યો - સીટ બતાવો`);
+  addMsg('user', `${bus.operator || bus.name || 'Unknown Bus'} સેલેક્ટ કર્યો - સીટ બતાવો`);
 }
 
 // ⑥ Confirm seat selection
@@ -1259,11 +1282,16 @@ function confirmSeatSelection(busId) {
     return;
   }
   
-  const bus = availableBuses.find(b => b.id === busId);
+  const bus = availableBuses.find(b => (b.bus_id || b.id) === busId);
+  if (!bus) {
+    console.error('Bus not found for confirmation:', busId);
+    return;
+  }
+  
   sendDataToAgent({
     type: 'seats_confirmed',
     bus_id: busId,
-    bus_name: bus.name,
+    bus_name: bus.operator || bus.name || 'Unknown Bus',
     selected_seats: selectedSeats,
     passenger_count: numPassengers,
     journey: currentJourney
@@ -1279,15 +1307,18 @@ function showPassengerDetailsForm(selectedSeats, busInfo) {
   passengerDetailsPanel = document.createElement('div');
   passengerDetailsPanel.className = 'passenger-details-panel';
   
+  const busName = busInfo.name || busInfo.operator || 'Unknown Bus';
+  const busFare = busInfo.fare || busInfo.price || 0;
+  
   let formHTML = `
     <div class="panel-header">
       <h3>👥 યાત્રી માહિતી</h3>
       <button onclick="closeAllPanels()" class="close-btn">×</button>
     </div>
     <div class="booking-summary">
-      <div>🚌 ${busInfo.name}</div>
+      <div>🚌 ${busName}</div>
       <div>💺 સીટ: ${selectedSeats.join(', ')}</div>
-      <div>₹ કુલ ફેર: ${busInfo.fare * selectedSeats.length}</div>
+      <div>₹ કુલ ફેર: ${busFare * selectedSeats.length}</div>
     </div>
     <form id="passengerForm">`;
   
@@ -1340,6 +1371,11 @@ function fillViaVoice() {
 // ⑨ Submit passenger details
 function submitPassengerDetails() {
   const form = document.getElementById('passengerForm');
+  if (!form) {
+    console.error('Passenger form not found');
+    return;
+  }
+  
   const formData = new FormData(form);
   const passengers = [];
   const contactInfo = {
@@ -1366,6 +1402,16 @@ function submitPassengerDetails() {
     return;
   }
   
+  // Find the selected bus
+  const selectedBusId = Object.keys(selectedBusSeats)[0];
+  const selectedBus = availableBuses.find(b => (b.bus_id || b.id) === selectedBusId);
+  
+  if (!selectedBus) {
+    console.error('Selected bus not found');
+    addMsg('ai', '⚠️ બસ માહિતી મળી નથી');
+    return;
+  }
+  
   // Send to agent for final booking
   sendDataToAgent({
     type: 'confirm_booking',
@@ -1373,7 +1419,11 @@ function submitPassengerDetails() {
     contact_info: contactInfo,
     journey: currentJourney,
     selected_seats: Object.values(selectedBusSeats).flat(),
-    bus_info: availableBuses.find(b => Object.keys(selectedBusSeats).includes(b.id))
+    bus_info: {
+      id: selectedBus.bus_id || selectedBus.id,
+      name: selectedBus.operator || selectedBus.name || 'Unknown Bus',
+      fare: selectedBus.price || selectedBus.fare || 0
+    }
   });
   
   addMsg('user', '✅ બુકિંગ કન્ફર્મ કરવા રીક્વેસ્ટ મોકલી');
