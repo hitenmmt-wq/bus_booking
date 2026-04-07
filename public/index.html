@@ -120,6 +120,167 @@ header{padding:calc(var(--sat) + 12px) clamp(14px,4vw,22px) 12px;
 .tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
 @keyframes dotB{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-5px);opacity:1}}
 
+/* New Booking Flow Panels */
+.journey-bus-panel, .passenger-details-panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  max-width: 90vw; max-height: 90vh; overflow-y: auto; z-index: 1000;
+  padding: 0; font-family: 'Segoe UI', sans-serif;
+}
+
+.panel-header {
+  background: linear-gradient(135deg, #ff6b00, #ff8533);
+  color: white; padding: 16px 20px; border-radius: 12px 12px 0 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.panel-header h3 { margin: 0; font-size: 18px; }
+.close-btn {
+  background: rgba(255,255,255,0.2); border: none; color: white;
+  width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+  font-size: 18px; display: flex; align-items: center; justify-content: center;
+}
+
+.journey-info {
+  padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid #eee;
+}
+
+.route { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 4px; }
+.date-passengers { font-size: 14px; color: #666; }
+
+.bus-list { padding: 16px 20px; }
+.bus-card {
+  border: 1px solid #ddd; border-radius: 8px; margin-bottom: 16px;
+  padding: 16px; background: white;
+}
+
+.bus-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+
+.bus-header h4 { margin: 0; color: #333; font-size: 16px; }
+.bus-price { font-size: 18px; font-weight: 700; color: #ff6b00; }
+
+.bus-details {
+  display: flex; gap: 16px; margin-bottom: 12px; font-size: 14px; color: #666;
+}
+
+.bus-actions {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+
+.view-seats-btn, .voice-select-btn {
+  padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 14px; font-weight: 500;
+}
+
+.view-seats-btn {
+  background: #007bff; color: white;
+}
+
+.voice-select-btn {
+  background: #28a745; color: white;
+}
+
+.seat-map {
+  background: #f8f9fa; padding: 16px; border-radius: 8px; margin-top: 12px;
+}
+
+.seat-row {
+  display: flex; justify-content: center; gap: 4px; margin-bottom: 8px;
+}
+
+.seat {
+  width: 32px; height: 32px; border: 2px solid #ddd; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  background: white;
+}
+
+.seat.available { border-color: #28a745; color: #28a745; }
+.seat.available:hover { background: #28a745; color: white; }
+.seat.occupied { background: #dc3545; color: white; border-color: #dc3545; cursor: not-allowed; }
+.seat.selected { background: #ff6b00; color: white; border-color: #ff6b00; }
+
+.seat-actions {
+  text-align: center; margin-top: 16px;
+}
+
+.confirm-seats-btn {
+  background: #ff6b00; color: white; border: none; padding: 12px 24px;
+  border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;
+}
+
+.passenger-details-panel {
+  width: 500px;
+}
+
+.booking-summary {
+  padding: 16px 20px; background: #f8f9fa; border-bottom: 1px solid #eee;
+  font-size: 14px; color: #333;
+}
+
+.booking-summary div { margin-bottom: 4px; }
+
+.passenger-form {
+  padding: 16px 20px; border-bottom: 1px solid #eee;
+}
+
+.passenger-form h4 {
+  margin: 0 0 12px 0; color: #333; font-size: 16px;
+}
+
+.passenger-form input, .passenger-form select {
+  width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd;
+  border-radius: 4px; font-size: 14px;
+}
+
+.contact-details {
+  padding: 16px 20px; border-bottom: 1px solid #eee;
+}
+
+.contact-details h4 {
+  margin: 0 0 12px 0; color: #333; font-size: 16px;
+}
+
+.contact-details input {
+  width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #ddd;
+  border-radius: 4px; font-size: 14px;
+}
+
+.form-actions {
+  padding: 16px 20px; display: flex; gap: 12px;
+}
+
+.confirm-booking-btn, .voice-fill-btn {
+  flex: 1; padding: 12px; border: none; border-radius: 6px;
+  font-size: 16px; font-weight: 600; cursor: pointer;
+}
+
+.confirm-booking-btn {
+  background: #28a745; color: white;
+}
+
+.voice-fill-btn {
+  background: #6f42c1; color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .journey-bus-panel, .passenger-details-panel {
+    width: 95vw; height: 95vh;
+  }
+  
+  .bus-details {
+    flex-direction: column; gap: 4px;
+  }
+  
+  .bus-actions {
+    flex-direction: column;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    BUS + SEAT PANEL (main feature)
 ═══════════════════════════════════════════════ */
@@ -936,11 +1097,330 @@ function stopViz() {
   if (audioCtx) { audioCtx.close(); audioCtx = null; }
   wvBars.forEach(b => { b.style.height = '3px'; b.style.background = 'rgba(255,107,0,.28)'; });
 }
+/* ─── NEW BOOKING FLOW FUNCTIONS ──────────────── */
+let journeyBusPanel = null;
+let passengerDetailsPanel = null;
+let currentJourney = null;
+let availableBuses = [];
+let selectedBusSeats = {};
+
+// ① Show journey details and bus list with seats
+function showJourneyBusSelection(journey, buses, passengerCount) {
+  currentJourney = journey;
+  availableBuses = buses;
+  numPassengers = passengerCount;
+  
+  // Close existing panels
+  closeAllPanels();
+  
+  journeyBusPanel = document.createElement('div');
+  journeyBusPanel.className = 'journey-bus-panel';
+  journeyBusPanel.innerHTML = `
+    <div class="panel-header">
+      <h3>🚌 બસ સેલેક્શન</h3>
+      <button onclick="closeAllPanels()" class="close-btn">×</button>
+    </div>
+    <div class="journey-info">
+      <div class="route">📍 ${journey.from} → ${journey.to}</div>
+      <div class="date-passengers">📅 ${journey.date} · 👥 ${passengerCount} passengers</div>
+    </div>
+    <div class="bus-list">
+      ${buses.map(bus => `
+        <div class="bus-card" data-bus-id="${bus.id}">
+          <div class="bus-header">
+            <h4>${bus.name}</h4>
+            <div class="bus-price">₹${bus.fare}</div>
+          </div>
+          <div class="bus-details">
+            <span class="departure">🕰️ ${bus.departure}</span>
+            <span class="duration">⏱️ ${bus.duration}</span>
+            <span class="available-seats">💺 ${bus.available_seats} seats</span>
+          </div>
+          <div class="bus-actions">
+            <button onclick="showBusSeats('${bus.id}')" class="view-seats-btn">💺 View Seats</button>
+            <button onclick="selectBusVoice('${bus.id}')" class="voice-select-btn">🎤 Select via Voice</button>
+          </div>
+          <div class="seat-layout" id="seats-${bus.id}" style="display:none;"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  document.body.appendChild(journeyBusPanel);
+  addMsg('ai', `🚌 ${buses.length} બસ મળી! કોઈ બસ પસંદ કરો અને સીટ બતાવો`);
+}
+
+// ② Show seats for selected bus
+function showBusSeats(busId) {
+  const bus = availableBuses.find(b => b.id === busId);
+  if (!bus) return;
+  
+  const seatContainer = document.getElementById(`seats-${busId}`);
+  if (seatContainer.style.display === 'none') {
+    // Show seats
+    seatContainer.style.display = 'block';
+    seatContainer.innerHTML = generateSeatLayout(bus.seats, busId);
+    
+    // Send bus selection to agent
+    sendDataToAgent({
+      type: 'bus_selected',
+      bus_id: busId,
+      bus_name: bus.name,
+      action: 'view_seats'
+    });
+  } else {
+    // Hide seats
+    seatContainer.style.display = 'none';
+  }
+}
+
+// ③ Generate seat layout HTML
+function generateSeatLayout(seats, busId) {
+  const seatRows = {};
+  seats.forEach(seat => {
+    const row = seat.seat_no.match(/\d+/)[0];
+    if (!seatRows[row]) seatRows[row] = [];
+    seatRows[row].push(seat);
+  });
+  
+  let html = '<div class="seat-map">';
+  Object.keys(seatRows).sort((a,b) => a-b).forEach(row => {
+    html += `<div class="seat-row">`;
+    seatRows[row].sort((a,b) => a.seat_no.localeCompare(b.seat_no)).forEach(seat => {
+      const isAvailable = seat.status === 'available';
+      const isSelected = selectedBusSeats[busId]?.includes(seat.seat_no);
+      html += `
+        <div class="seat ${isAvailable ? 'available' : 'occupied'} ${isSelected ? 'selected' : ''}" 
+             data-seat="${seat.seat_no}" data-bus="${busId}"
+             onclick="${isAvailable ? `toggleSeat('${seat.seat_no}', '${busId}')` : ''}">
+          ${seat.seat_no}
+        </div>`;
+    });
+    html += '</div>';
+  });
+  html += `
+    <div class="seat-actions">
+      <button onclick="confirmSeatSelection('${busId}')" class="confirm-seats-btn">
+        ✅ Confirm Selected Seats
+      </button>
+    </div>
+  </div>`;
+  
+  return html;
+}
+
+// ④ Toggle seat selection
+function toggleSeat(seatNo, busId) {
+  if (!selectedBusSeats[busId]) selectedBusSeats[busId] = [];
+  
+  const seatIndex = selectedBusSeats[busId].indexOf(seatNo);
+  if (seatIndex > -1) {
+    selectedBusSeats[busId].splice(seatIndex, 1);
+  } else {
+    if (selectedBusSeats[busId].length < numPassengers) {
+      selectedBusSeats[busId].push(seatNo);
+    } else {
+      addMsg('ai', `⚠️ માત્ર ${numPassengers} સીટ સેલેક્ટ કરી શકાય`);
+      return;
+    }
+  }
+  
+  // Update UI
+  const seatEl = document.querySelector(`[data-seat="${seatNo}"][data-bus="${busId}"]`);
+  seatEl.classList.toggle('selected');
+  
+  // Send to agent
+  sendDataToAgent({
+    type: 'seat_toggled',
+    bus_id: busId,
+    seat_no: seatNo,
+    selected_seats: selectedBusSeats[busId],
+    action: selectedBusSeats[busId].includes(seatNo) ? 'select' : 'deselect'
+  });
+}
+
+// ⑤ Voice-based bus selection
+function selectBusVoice(busId) {
+  const bus = availableBuses.find(b => b.id === busId);
+  sendDataToAgent({
+    type: 'bus_selected_voice',
+    bus_id: busId,
+    bus_name: bus.name,
+    action: 'voice_selection'
+  });
+  addMsg('user', `${bus.name} સેલેક્ટ કર્યો - સીટ બતાવો`);
+}
+
+// ⑥ Confirm seat selection
+function confirmSeatSelection(busId) {
+  const selectedSeats = selectedBusSeats[busId] || [];
+  if (selectedSeats.length !== numPassengers) {
+    addMsg('ai', `⚠️ કૃપયા ${numPassengers} સીટ સેલેક્ટ કરો`);
+    return;
+  }
+  
+  const bus = availableBuses.find(b => b.id === busId);
+  sendDataToAgent({
+    type: 'seats_confirmed',
+    bus_id: busId,
+    bus_name: bus.name,
+    selected_seats: selectedSeats,
+    passenger_count: numPassengers,
+    journey: currentJourney
+  });
+  
+  addMsg('user', `✅ ${selectedSeats.join(', ')} સીટ કન્ફર્મ કરી`);
+}
+
+// ⑦ Show passenger details form
+function showPassengerDetailsForm(selectedSeats, busInfo) {
+  closeAllPanels();
+  
+  passengerDetailsPanel = document.createElement('div');
+  passengerDetailsPanel.className = 'passenger-details-panel';
+  
+  let formHTML = `
+    <div class="panel-header">
+      <h3>👥 યાત્રી માહિતી</h3>
+      <button onclick="closeAllPanels()" class="close-btn">×</button>
+    </div>
+    <div class="booking-summary">
+      <div>🚌 ${busInfo.name}</div>
+      <div>💺 સીટ: ${selectedSeats.join(', ')}</div>
+      <div>₹ કુલ ફેર: ${busInfo.fare * selectedSeats.length}</div>
+    </div>
+    <form id="passengerForm">`;
+  
+  selectedSeats.forEach((seat, index) => {
+    formHTML += `
+      <div class="passenger-form">
+        <h4>યાત્રી ${index + 1} (સીટ ${seat})</h4>
+        <input type="text" name="name_${index}" placeholder="પૂરું નામ" required>
+        <input type="number" name="age_${index}" placeholder="ઉમર" required>
+        <select name="gender_${index}" required>
+          <option value="">લિંગ પસંદ કરો</option>
+          <option value="male">પુરુષ</option>
+          <option value="female">મહિલા</option>
+        </select>
+      </div>`;
+  });
+  
+  formHTML += `
+      <div class="contact-details">
+        <h4>સંપર્ક માહિતી</h4>
+        <input type="tel" name="phone" placeholder="મોબાઇલ નંબર" required>
+        <input type="email" name="email" placeholder="ઇમેઇલ (ઐચ્છિક)">
+      </div>
+      <div class="form-actions">
+        <button type="button" onclick="submitPassengerDetails()" class="confirm-booking-btn">
+          🎟️ બુકિંગ કન્ફર્મ કરો
+        </button>
+        <button type="button" onclick="fillViaVoice()" class="voice-fill-btn">
+          🎤 Voice થી ભરો
+        </button>
+      </div>
+    </form>
+  `;
+  
+  passengerDetailsPanel.innerHTML = formHTML;
+  document.body.appendChild(passengerDetailsPanel);
+  
+  addMsg('ai', '👥 યાત્રીઓની માહિતી ભરો અથવા Voice થી બતાવો');
+}
+
+// ⑧ Fill form via voice
+function fillViaVoice() {
+  sendDataToAgent({
+    type: 'collect_via_voice',
+    action: 'start_voice_collection'
+  });
+  addMsg('user', '🎤 Voice થી માહિતી ભરવા શરૂ કર્યો');
+}
+
+// ⑨ Submit passenger details
+function submitPassengerDetails() {
+  const form = document.getElementById('passengerForm');
+  const formData = new FormData(form);
+  const passengers = [];
+  const contactInfo = {
+    phone: formData.get('phone'),
+    email: formData.get('email')
+  };
+  
+  // Validate and collect passenger data
+  for (let i = 0; i < numPassengers; i++) {
+    const name = formData.get(`name_${i}`);
+    const age = formData.get(`age_${i}`);
+    const gender = formData.get(`gender_${i}`);
+    
+    if (!name || !age || !gender) {
+      addMsg('ai', '⚠️ સબૈ માહિતી ભરો');
+      return;
+    }
+    
+    passengers.push({ name, age: parseInt(age), gender });
+  }
+  
+  if (!contactInfo.phone) {
+    addMsg('ai', '⚠️ મોબાઇલ નંબર આવશ્યક છે');
+    return;
+  }
+  
+  // Send to agent for final booking
+  sendDataToAgent({
+    type: 'confirm_booking',
+    passengers,
+    contact_info: contactInfo,
+    journey: currentJourney,
+    selected_seats: Object.values(selectedBusSeats).flat(),
+    bus_info: availableBuses.find(b => Object.keys(selectedBusSeats).includes(b.id))
+  });
+  
+  addMsg('user', '✅ બુકિંગ કન્ફર્મ કરવા રીક્વેસ્ટ મોકલી');
+}
+
+// ⑩ Show booking confirmation
+function showBookingConfirmation(bookingData) {
+  addMsg('ai', `🎉 બુકિંગ સફળ! 
+🎟️ PNR: ${bookingData.pnr}
+💺 સીટ: ${bookingData.seat_no}
+🚌 ઑપરેટર: ${bookingData.operator}
+₹ ફેર: ${bookingData.fare}
+
+તમારી યાત્રા સુરક્ષિત રહે! 🙏`);
+}
+
+// ⑪ Close all panels
+function closeAllPanels() {
+  [journeyBusPanel, passengerDetailsPanel, seatCardEl].forEach(panel => {
+    if (panel) {
+      panel.remove();
+    }
+  });
+  journeyBusPanel = null;
+  passengerDetailsPanel = null;
+  seatCardEl = null;
+  selectedBusSeats = {};
+  allBuses = [];
+}
+
+// ⑫ Send data to agent
+function sendDataToAgent(data) {
+  if (room && room.localParticipant) {
+    const encoder = new TextEncoder();
+    const encodedData = encoder.encode(JSON.stringify(data));
+    room.localParticipant.publishData(encodedData, { reliable: true });
+    console.log('📤 Sent to agent:', data);
+  }
+}
+
+/* ─── END NEW BOOKING FLOW ──────────────────── */
+
 function cleanupAudio() {
   document.querySelectorAll('audio').forEach(a => { a.pause(); a.remove(); });
 }
 
-/* ─── MAIN: startCall ────────────────────────── */
+/* ─── MAIN: startCall ──────────────────────── */
 async function startCall() {
   const btn = document.getElementById('callBtn');
   if (btn.disabled) return;
@@ -1028,8 +1508,18 @@ async function startCall() {
         const msg = JSON.parse(new TextDecoder().decode(payload));
         console.log('📨 Received message from agent:', msg);
 
-        // ① Agent sends list of buses (after passenger count collected)
-        // { type:'show_buses', buses:[...], passenger_count:2, total_buses:15 }
+        // ① Agent sends journey details and bus list with seats
+        // { type:'show_journey_buses', journey:{from,to,date}, buses:[{id,name,seats:[...]}], passenger_count:2 }
+        if (msg.type === 'show_journey_buses') {
+          console.log('🚌 Processing show_journey_buses:', {
+            journey: msg.journey,
+            busCount: msg.buses?.length,
+            passengerCount: msg.passenger_count
+          });
+          showJourneyBusSelection(msg.journey, msg.buses, msg.passenger_count);
+        }
+
+        // ② Agent sends list of buses (legacy support)
         if (msg.type === 'show_buses') {
           console.log('🚌 Processing show_buses message:', {
             busCount: msg.buses?.length,
@@ -1076,19 +1566,25 @@ async function startCall() {
           highlightSeatFromAgent(msg.seat_no);
         }
 
-        // ④ Booking confirmed — close panel, show success
-        // { type:'booking_confirmed', pnr, seat_no, operator, fare }
-        if (msg.type === 'booking_confirmed') {
-          console.log('🎉 Processing booking_confirmed:', msg);
-          seatCardEl?.remove(); seatCardEl = null;
-          addMsg('ai', `🎉 બુકિંગ કન્ફર્મ! PNR: ${msg.pnr||'—'} · સીટ: ${msg.seat_no||'—'} · ₹${msg.fare||'—'}`);
+        // ④ Request passenger details for booking
+        // { type:'collect_passenger_details', selected_seats:['1A','2B'], bus_info:{...} }
+        if (msg.type === 'collect_passenger_details') {
+          console.log('👥 Processing collect_passenger_details:', msg);
+          showPassengerDetailsForm(msg.selected_seats, msg.bus_info);
         }
 
-        // ⑤ Agent requests FE to reset seat panel (e.g. user changed date/bus)
+        // ⑤ Booking confirmed — close panel, show success
+        // { type:'booking_confirmed', pnr, seat_no, operator, fare, passenger_details }
+        if (msg.type === 'booking_confirmed') {
+          console.log('🎉 Processing booking_confirmed:', msg);
+          closeAllPanels();
+          showBookingConfirmation(msg);
+        }
+
+        // ⑥ Agent requests FE to reset panels
         if (msg.type === 'reset_panel') {
           console.log('🔄 Processing reset_panel');
-          seatCardEl?.remove(); seatCardEl = null;
-          allBuses = []; selectedSeats = {};
+          closeAllPanels();
         }
 
       } catch(e) {
