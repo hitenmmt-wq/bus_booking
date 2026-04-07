@@ -355,7 +355,7 @@ header{padding:calc(var(--sat) + 12px) clamp(14px,4vw,22px) 12px;
         <div class="chip">🗺️ અમદાવાદ → સુરત</div>
         <div class="chip">🗺️ અમદાવાદ → મુંબઈ</div>
         <div class="chip">🗺️ સુરત → રાજકોટ</div>
-        <div class="chip">💰 ₹240 થી શરૂ</div>
+        <!-- <div class="chip">💰 ₹240 થી શરૂ</div> -->
       </div>
     </div>
   </div>
@@ -861,6 +861,47 @@ function setLive(who, txt) {
   document.getElementById('liveT').innerHTML =
     `<strong>${who === 'user' ? '👤 તમે' : '🤖 Rakesh'}:</strong> ${display}`;
 }
+let silenceTimer = null;
+let isUserSpeaking = false;
+
+function detectSilence() {
+  if (!audioCtx || !room) return;
+  
+  const micTrack = room.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone)?.track;
+  if (!micTrack?.mediaStream) return;
+  
+  const src = audioCtx.createMediaStreamSource(micTrack.mediaStream);
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  src.connect(analyser);
+  
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  const silenceThreshold = 30; // Adjust based on testing
+  const silenceDelay = 2000; // 2 seconds of silence before reducing
+  
+  function checkAudio() {
+    if (!room) return;
+    
+    analyser.getByteFrequencyData(data);
+    const volume = data.reduce((a, b) => a + b) / data.length;
+    
+    if (volume > silenceThreshold) {
+      // User is speaking
+      if (!isUserSpeaking) {
+        isUserSpeaking = true;
+      }
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        isUserSpeaking = false;
+      }, silenceDelay);
+    }
+    
+    requestAnimationFrame(checkAudio);
+  }
+  
+  checkAudio();
+}
+
 function setOrbState(state) {
   const orb = document.getElementById('voiceOrb');
   const rings = ['ring1','ring2','ring3'].map(id => document.getElementById(id));
@@ -887,6 +928,8 @@ function startViz(stream) {
       b.style.background = `rgba(255,107,0,${.2+p*.8})`;
     });
   })();
+  // Start silence detection
+  detectSilence();
 }
 function stopViz() {
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
@@ -925,8 +968,17 @@ async function startCall() {
 
   try {
     setStatus('LiveKit સાથે જોડાઈ રહ્યા છીએ…');
-    room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true,
-      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true } });
+    room = new LivekitClient.Room({ 
+      adaptiveStream: true, 
+      dynacast: true,
+      audioCaptureDefaults: { 
+        echoCancellation: true, 
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 16000,  // Lower sample rate reduces data
+        channelCount: 1     // Mono instead of stereo
+      }
+    });
 
     room.on(LivekitClient.RoomEvent.Connected, () => {
       setOrbState('listening'); setStatus('🟢 Rakesh સાથે જોડાયા — ગુજરાતીમાં બોલો'); setBusy(true);
@@ -970,7 +1022,6 @@ async function startCall() {
       }
     });
 
-    /* ─── DATA MESSAGES FROM AGENT ──────────────── */
     room.on(LivekitClient.RoomEvent.DataReceived, payload => {
       console.log('🔄 DataReceived event triggered');
       try {
